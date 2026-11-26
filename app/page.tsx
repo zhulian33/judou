@@ -8,6 +8,7 @@ import { MessageInput } from "@/components/MessageInput";
 import { OpenerResultCard } from "@/components/OpenerResultCard";
 import { ReadingDetails } from "@/components/ReadingDetails";
 import { GuidanceCard } from "@/components/GuidanceCard";
+import { SummaryCard } from "@/components/SummaryCard";
 import { ResultCard } from "@/components/ResultCard";
 import { SceneSelector } from "@/components/SceneSelector";
 import { ThoughtBubble } from "@/components/ThoughtBubble";
@@ -26,6 +27,7 @@ import type {
   Gender,
   OpenerResult,
   Scene,
+  SummaryResult,
 } from "@/lib/types";
 
 function isApiError(
@@ -44,6 +46,8 @@ export default function Home() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [openerResult, setOpenerResult] = useState<OpenerResult | null>(null);
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([]);
+  const [summary, setSummary] = useState<SummaryResult | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modelSource, setModelSource] = useState<
@@ -134,6 +138,41 @@ export default function Home() {
     setMessage(value);
     setError(null);
     setResult(null);
+    setSummary(null);
+  }
+
+  async function handleSummarize() {
+    if (message.trim().length < 20) {
+      setError("先把那段话贴进来，20 字以上我才好拆。");
+      return;
+    }
+
+    setSummarizing(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: message, scene }),
+      });
+      const payload = (await response.json()) as SummaryResult | { error: string };
+
+      if (!response.ok || "error" in payload) {
+        throw new Error("error" in payload ? payload.error : "没拆出来。");
+      }
+
+      setSummary(payload);
+      window.setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 120);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "请稍后再试。",
+      );
+    } finally {
+      setSummarizing(false);
+    }
   }
 
   function handleMyWordsChange(value: string) {
@@ -465,6 +504,9 @@ export default function Home() {
             loading={loading}
             error={error}
             onMessageChange={handleMessageChange}
+            onSummarize={handleSummarize}
+            summarizing={summarizing}
+            summaryReady={Boolean(summary)}
             onMyWordsChange={handleMyWordsChange}
             onContextChange={handleContextChange}
             onGenderChange={handleGenderChange}
@@ -500,6 +542,7 @@ export default function Home() {
           ref={resultRef}
           className="scroll-mt-5 space-y-9 pt-9 empty:hidden sm:space-y-11 lg:pt-0"
         >
+          {summary ? <SummaryCard result={summary} /> : null}
           {openerResult ? (
             <OpenerResultCard result={openerResult} />
           ) : result ? (

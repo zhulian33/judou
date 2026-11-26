@@ -24,9 +24,31 @@ declare module "lunar-javascript" {
     getWeekInChinese(): string;
   }
 
+  interface EightChar {
+    getYear(): string;
+    getMonth(): string;
+    getDay(): string;
+    getTime(): string;
+    getDayGan(): string;
+    getDayZhi(): string;
+    getDayNaYin(): string;
+  }
+
+  interface LunarDay {
+    getEightChar(): EightChar;
+  }
+
   const lunar: {
     Solar: {
       fromYmd(year: number, month: number, day: number): SolarDate;
+      fromYmdHms(
+        year: number,
+        month: number,
+        day: number,
+        hour: number,
+        minute: number,
+        second: number,
+      ): SolarDate;
     };
   };
 

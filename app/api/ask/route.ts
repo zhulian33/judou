@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isValidDateString } from "@/lib/almanac";
 import { buildAskDemo } from "@/lib/askDemo";
+import { buildChart } from "@/lib/chart";
 import { ASK_SYSTEM_PROMPT, buildAskPrompt } from "@/lib/askPrompt";
 import { isScene } from "@/lib/scenes";
 import type { AskRequest, AskResult, Scene } from "@/lib/types";
@@ -130,6 +131,9 @@ export async function POST(request: Request) {
   const question = readString(body.question);
   const scene = readString(body.scene);
   const date = readString(body.date);
+  const birthRaw = isRecord(body.birth) ? body.birth : null;
+  const birthDate = birthRaw ? readString(birthRaw.date) : "";
+  const birthHour = birthRaw ? Number(birthRaw.hour) : Number.NaN;
 
   if (!question) {
     return NextResponse.json({ error: "先写一句你想问的。" }, { status: 400 });
@@ -147,14 +151,39 @@ export async function POST(request: Request) {
     );
   }
 
+  if (birthDate && !isValidDateString(birthDate)) {
+    return NextResponse.json(
+      { error: "生日格式不正确，请使用 YYYY-MM-DD。" },
+      { status: 400 },
+    );
+  }
+
   const payload: AskRequest = {
     question,
     ...(scene && isScene(scene) ? { scene: scene as Scene } : {}),
     ...(date ? { date } : {}),
+    ...(birthDate
+      ? {
+          birth: {
+            date: birthDate,
+            ...(Number.isFinite(birthHour) ? { hour: birthHour } : {}),
+          },
+        }
+      : {}),
   };
 
   const modeled = await askModel(payload);
-  const result = modeled ?? buildAskDemo(payload);
+  const base = modeled ?? buildAskDemo(payload);
+  const chart = payload.birth ? buildChart(payload.birth) : null;
+  const result = {
+    ...base,
+    ...(chart
+      ? {
+          chart: `${chart.pillars} · 日主${chart.dayMaster}`,
+          basis: [...base.basis.slice(0, 2), `命盘：${chart.pillars}`],
+        }
+      : {}),
+  };
 
   return NextResponse.json(result, {
     headers: {

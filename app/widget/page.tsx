@@ -49,9 +49,25 @@ export default function WidgetPage() {
   const [askResult, setAskResult] = useState<AskResult | null>(null);
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
+  const [birthDate, setBirthDate] = useState("");
+  const [birthHour, setBirthHour] = useState("");
+  const [showBirth, setShowBirth] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { account, register } = useAccount();
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("judou.birth.v1");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { date?: string; hour?: string };
+        if (parsed.date) setBirthDate(parsed.date);
+        if (parsed.hour) setBirthHour(parsed.hour);
+      }
+    } catch {
+      // 忽略损坏的本地数据
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +166,18 @@ export default function WidgetPage() {
       const response = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, scene }),
+        body: JSON.stringify({
+          question,
+          scene,
+          ...(birthDate
+            ? {
+                birth: {
+                  date: birthDate,
+                  ...(birthHour ? { hour: Number(birthHour) } : {}),
+                },
+              }
+            : {}),
+        }),
       });
       const payload = (await response.json()) as AskResult | { error: string };
 
@@ -443,6 +470,59 @@ export default function WidgetPage() {
                 )}
               </div>
 
+              <div className="mt-2 rounded-xl border border-black/10 bg-white/70 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBirth((value) => !value)}
+                  className="flex w-full items-center justify-between text-[10px] text-ink-500"
+                >
+                  <span>
+                    生日（可选，排四柱用）
+                    {birthDate ? ` · ${birthDate}` : ""}
+                  </span>
+                  <span>{showBirth ? "收起" : "填写"}</span>
+                </button>
+                {showBirth ? (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setBirthDate(value);
+                        window.localStorage.setItem(
+                          "judou.birth.v1",
+                          JSON.stringify({ date: value, hour: birthHour }),
+                        );
+                      }}
+                      className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                    />
+                    <select
+                      value={birthHour}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setBirthHour(value);
+                        window.localStorage.setItem(
+                          "judou.birth.v1",
+                          JSON.stringify({ date: birthDate, hour: value }),
+                        );
+                      }}
+                      className="w-[92px] rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                    >
+                      <option value="">时辰不详</option>
+                      {Array.from({ length: 24 }, (_, index) => (
+                        <option key={index} value={index}>
+                          {`${index}:00`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                <p className="mt-1 text-[9px] leading-4 text-ink-400">
+                  排盘要生辰：不填就只按今天黄历回答。
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={askAlmanac}
@@ -470,6 +550,11 @@ export default function WidgetPage() {
                     <p className="text-[9px] font-semibold text-ink-400">
                       依据
                     </p>
+                    {askResult.chart ? (
+                      <p className="mt-1 text-[10px] leading-4 text-ink-700">
+                        命盘：{askResult.chart}
+                      </p>
+                    ) : null}
                     <ul className="mt-1 space-y-0.5">
                       {askResult.basis.map((item) => (
                         <li

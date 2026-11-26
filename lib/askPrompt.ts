@@ -1,4 +1,5 @@
 import { getAlmanacData } from "@/lib/almanac";
+import { buildChart } from "@/lib/chart";
 import type { AskRequest, Scene } from "@/lib/types";
 
 const SCENE_LABEL: Record<Scene, string> = {
@@ -24,6 +25,10 @@ export const ASK_SYSTEM_PROMPT = `你是「句读」里的黄历顾问。
 export function buildAskPrompt(req: AskRequest): string {
   const almanac = getAlmanacData(req.date);
   const scene = req.scene ? `\n提问场景：${SCENE_LABEL[req.scene]}` : "";
+  const chart = req.birth ? buildChart(req.birth) : null;
+  const chartBlock = chart
+    ? `\n\n## 用户命盘（本机排四柱，仅作民俗参考）\n${chart.summaryLine}\n日主为 ${chart.dayMaster}。只可以说「按传统说法，${chart.dayMaster} 日主的人更吃哪一套沟通方式」，不要断言性格或命运。`
+    : "";
 
   return `## 今日排盘（系统实时计算，只能引用这些）
 日期：${almanac.date} ${almanac.weekday}
@@ -35,7 +40,7 @@ export function buildAskPrompt(req: AskRequest): string {
 方位：${almanac.sha}
 今日五行：${almanac.nayin}
 吉位：喜神${almanac.xiDirection}，财神${almanac.caiDirection}
-今日总述：${almanac.summary}
+今日总述：${almanac.summary}${chartBlock}
 
 ## 用户的问题${scene}
 ${req.question.trim()}

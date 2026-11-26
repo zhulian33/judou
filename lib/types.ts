@@ -116,16 +116,42 @@ export interface OpenerResult {
   timing?: string;
 }
 
+export interface BirthInfo {
+  /** YYYY-MM-DD */
+  date: string;
+  /** 0-23，不填按 12 点算 */
+  hour?: number;
+}
+
 export interface AskRequest {
   question: string;
   scene?: Scene;
   date?: string;
+  birth?: BirthInfo;
 }
 
 export interface AskResult {
   answer: string;
   basis: string[];
   caution: string;
+  /** 有生辰时返回四柱，方便界面显示 */
+  chart?: string;
+}
+
+export interface SummaryRequest {
+  text: string;
+  scene?: Scene;
+}
+
+export interface SummaryResult {
+  /** 一句话核心，30 字内 */
+  core: string;
+  /** 2-4 条关键信息 */
+  points: string[];
+  /** 对方真正想说的 */
+  meaning: string;
+  /** 你接下来该做什么 */
+  advice: string;
 }
 
 export interface SceneOption {

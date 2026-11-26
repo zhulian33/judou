@@ -23,6 +23,9 @@ interface MessageInputProps {
   onContextChange: (value: string) => void;
   onGenderChange: (value: Gender) => void;
   onAnalyze: () => void;
+  onSummarize: () => void;
+  summarizing: boolean;
+  summaryReady: boolean;
   onPickExample: (example: ExampleMessage) => void;
 }
 
@@ -39,6 +42,9 @@ export function MessageInput({
   onContextChange,
   onGenderChange,
   onAnalyze,
+  onSummarize,
+  summarizing,
+  summaryReady,
   onPickExample,
 }: MessageInputProps) {
   const isOpener = mode === "opener";
@@ -248,6 +254,21 @@ export function MessageInput({
         >
           {error}
         </p>
+      ) : null}
+
+      {message.trim().length >= 60 ? (
+        <button
+          type="button"
+          onClick={onSummarize}
+          disabled={summarizing}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-950/12 bg-cream-50 px-4 py-2.5 text-[12px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:cursor-wait disabled:opacity-60"
+        >
+          {summarizing
+            ? "正在拆这段…"
+            : summaryReady
+              ? "重新提取核心"
+              : "太长了？先提取核心意思"}
+        </button>
       ) : null}
 
       <button
