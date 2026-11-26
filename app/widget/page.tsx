@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { BrandMark, CheckIcon, CopyIcon } from "@/components/Icons";
+import { CheckIcon, CopyIcon } from "@/components/Icons";
 import { RegisterDialog } from "@/components/RegisterDialog";
 import { useAccount } from "@/lib/useAccount";
 import type {
@@ -209,9 +209,11 @@ export default function WidgetPage() {
       >
         <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-950 text-white">
-              <BrandMark className="h-4 w-4" />
-            </span>
+            <img
+              src="/icon-512.png"
+              alt="句读JUDOU"
+              className="h-7 w-7 rounded-full"
+            />
             <div>
               <p className="text-sm font-semibold tracking-[0.06em] text-ink-950">
                 句读

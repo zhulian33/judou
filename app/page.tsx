@@ -348,9 +348,11 @@ export default function Home() {
 
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 pb-4 pt-5 sm:px-7 sm:pt-7">
         <a href="#" className="group flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-950 text-cream-50 shadow-soft transition-transform duration-300 group-hover:-rotate-6">
-            <BrandMark className="h-5 w-5" />
-          </span>
+          <img
+            src="/icon-512.png"
+            alt="句读JUDOU"
+            className="h-10 w-10 rounded-full shadow-soft transition-transform duration-300 group-hover:-rotate-6"
+          />
           <span>
             <span className="block font-serif text-[17px] font-semibold tracking-[0.08em] text-ink-950">
               句读
