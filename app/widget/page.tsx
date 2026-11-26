@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { CheckIcon, CopyIcon } from "@/components/Icons";
 import { RegisterDialog } from "@/components/RegisterDialog";
 import { useAccount } from "@/lib/useAccount";
+import { PLACES } from "@/lib/places";
 import type {
   AlmanacData,
   AnalyzeResult,
@@ -50,7 +51,9 @@ export default function WidgetPage() {
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
   const [birthDate, setBirthDate] = useState("");
-  const [birthHour, setBirthHour] = useState("");
+  const [birthTime, setBirthTime] = useState("");
+  const [birthPlace, setBirthPlace] = useState("");
+  const [birthGender, setBirthGender] = useState("");
   const [showBirth, setShowBirth] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -60,9 +63,16 @@ export default function WidgetPage() {
     try {
       const raw = window.localStorage.getItem("judou.birth.v1");
       if (raw) {
-        const parsed = JSON.parse(raw) as { date?: string; hour?: string };
+        const parsed = JSON.parse(raw) as {
+          date?: string;
+          time?: string;
+          place?: string;
+          gender?: string;
+        };
         if (parsed.date) setBirthDate(parsed.date);
-        if (parsed.hour) setBirthHour(parsed.hour);
+        if (parsed.time) setBirthTime(parsed.time);
+        if (parsed.place) setBirthPlace(parsed.place);
+        if (parsed.gender) setBirthGender(parsed.gender);
       }
     } catch {
       // 忽略损坏的本地数据
@@ -173,7 +183,16 @@ export default function WidgetPage() {
             ? {
                 birth: {
                   date: birthDate,
-                  ...(birthHour ? { hour: Number(birthHour) } : {}),
+                  ...(birthTime
+                    ? {
+                        hour: Number(birthTime.split(":")[0]),
+                        minute: Number(birthTime.split(":")[1]),
+                      }
+                    : {}),
+                  ...(birthPlace ? { place: birthPlace } : {}),
+                  ...(birthGender === "male" || birthGender === "female"
+                    ? { gender: birthGender }
+                    : {}),
                 },
               }
             : {}),
@@ -490,43 +509,96 @@ export default function WidgetPage() {
                   <span>{showBirth ? "收起" : "填写"}</span>
                 </button>
                 {showBirth ? (
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="date"
-                      value={birthDate}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setBirthDate(value);
-                        window.localStorage.setItem(
-                          "judou.birth.v1",
-                          JSON.stringify({ date: value, hour: birthHour }),
-                        );
-                      }}
-                      className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
-                    />
-                    <select
-                      value={birthHour}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setBirthHour(value);
-                        window.localStorage.setItem(
-                          "judou.birth.v1",
-                          JSON.stringify({ date: birthDate, hour: value }),
-                        );
-                      }}
-                      className="w-[92px] rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
-                    >
-                      <option value="">时辰不详</option>
-                      {Array.from({ length: 24 }, (_, index) => (
-                        <option key={index} value={index}>
-                          {`${index}:00`}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex gap-1.5">
+                      <input
+                        type="date"
+                        value={birthDate}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setBirthDate(value);
+                          window.localStorage.setItem(
+                            "judou.birth.v1",
+                            JSON.stringify({
+                              date: value,
+                              time: birthTime,
+                              place: birthPlace,
+                              gender: birthGender,
+                            }),
+                          );
+                        }}
+                        className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      />
+                      <input
+                        type="time"
+                        value={birthTime}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setBirthTime(value);
+                          window.localStorage.setItem(
+                            "judou.birth.v1",
+                            JSON.stringify({
+                              date: birthDate,
+                              time: value,
+                              place: birthPlace,
+                              gender: birthGender,
+                            }),
+                          );
+                        }}
+                        className="w-[86px] rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      />
+                    </div>
+                    <div className="flex gap-1.5">
+                      <select
+                        value={birthPlace}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setBirthPlace(value);
+                          window.localStorage.setItem(
+                            "judou.birth.v1",
+                            JSON.stringify({
+                              date: birthDate,
+                              time: birthTime,
+                              place: value,
+                              gender: birthGender,
+                            }),
+                          );
+                        }}
+                        className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      >
+                        <option value="">出生城市（真太阳时）</option>
+                        {PLACES.map((place) => (
+                          <option key={place.name} value={place.name}>
+                            {place.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={birthGender}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setBirthGender(value);
+                          window.localStorage.setItem(
+                            "judou.birth.v1",
+                            JSON.stringify({
+                              date: birthDate,
+                              time: birthTime,
+                              place: birthPlace,
+                              gender: value,
+                            }),
+                          );
+                        }}
+                        className="w-[76px] rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      >
+                        <option value="">性别</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                      </select>
+                    </div>
                   </div>
                 ) : null}
                 <p className="mt-1 text-[9px] leading-4 text-ink-400">
-                  排盘要生辰：不填就只按今天黄历回答。
+                  按真太阳时排，时间精确到分钟；城市修正经度，性别只影响大运。
                 </p>
               </div>
 

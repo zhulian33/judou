@@ -134,6 +134,10 @@ export async function POST(request: Request) {
   const birthRaw = isRecord(body.birth) ? body.birth : null;
   const birthDate = birthRaw ? readString(birthRaw.date) : "";
   const birthHour = birthRaw ? Number(birthRaw.hour) : Number.NaN;
+  const birthMinute = birthRaw ? Number(birthRaw.minute) : Number.NaN;
+  const birthPlace = birthRaw ? readString(birthRaw.place) : "";
+  const birthLongitude = birthRaw ? Number(birthRaw.longitude) : Number.NaN;
+  const birthGender = birthRaw ? readString(birthRaw.gender) : "";
 
   if (!question) {
     return NextResponse.json({ error: "先写一句你想问的。" }, { status: 400 });
@@ -167,6 +171,12 @@ export async function POST(request: Request) {
           birth: {
             date: birthDate,
             ...(Number.isFinite(birthHour) ? { hour: birthHour } : {}),
+            ...(Number.isFinite(birthMinute) ? { minute: birthMinute } : {}),
+            ...(birthPlace ? { place: birthPlace } : {}),
+            ...(Number.isFinite(birthLongitude) ? { longitude: birthLongitude } : {}),
+            ...(birthGender === "male" || birthGender === "female"
+              ? { gender: birthGender }
+              : {}),
           },
         }
       : {}),
@@ -185,6 +195,8 @@ export async function POST(request: Request) {
             dayMasterElement: chart.dayMasterElement,
             lines: chart.lines,
             wuXing: chart.wuXing,
+            solarTime: chart.solarTime,
+            daYun: chart.daYun,
           },
           basis: [...base.basis.slice(0, 2), `命盘：${chart.pillars}`],
         }

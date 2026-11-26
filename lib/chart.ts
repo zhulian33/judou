@@ -1,5 +1,6 @@
 import lunar from "lunar-javascript";
 
+import { DEFAULT_LONGITUDE, findPlaceLongitude } from "@/lib/places";
 import type { BirthInfo } from "@/lib/types";
 
 const { Solar } = lunar;
@@ -32,14 +33,6 @@ const ZHI_WUXING: Record<string, string> = {
   子: "水",
 };
 
-export interface ChartPillar {
-  label: string;
-  ganZhi: string;
-  shiShen: string;
-  nayin: string;
-  diShi: string;
-}
-
 export interface ChartResult {
   pillars: string;
   dayMaster: string;
@@ -47,10 +40,26 @@ export interface ChartResult {
   wuXing: Array<{ element: string; count: number }>;
   taiYuan: string;
   mingGong: string;
-  /** 一行摘要，给模型和卡片顶部用 */
+  solarTime: string;
+  daYun: Array<{ range: string; ganZhi: string; age: string }>;
   summaryLine: string;
-  /** 展示用的几行 */
   lines: string[];
+}
+
+/** 均时差（分钟）——真太阳时相对平太阳时的偏差，年积日的近似公式。 */
+function equationOfTime(dayOfYear: number): number {
+  const b = (2 * Math.PI * (dayOfYear - 81)) / 364;
+  return 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+}
+
+function dayOfYear(year: number, month: number, day: number): number {
+  const start = Date.UTC(year, 0, 1);
+  const current = Date.UTC(year, month - 1, day);
+  return Math.floor((current - start) / 86_400_000) + 1;
+}
+
+function pad(value: number): string {
+  return value.toString().padStart(2, "0");
 }
 
 /** 用本机算法排四柱，不联网、不编造。只有用户填了生日才算。 */
@@ -71,44 +80,37 @@ export function buildChart(birth: BirthInfo): ChartResult | null {
     typeof birth.hour === "number" && birth.hour >= 0 && birth.hour <= 23
       ? birth.hour
       : 12;
+  const minute =
+    typeof birth.minute === "number" && birth.minute >= 0 && birth.minute <= 59
+      ? birth.minute
+      : 0;
 
-  const eightChar = Solar.fromYmdHms(year, month, day, hour, 0, 0)
+  const longitude =
+    typeof birth.longitude === "number"
+      ? birth.longitude
+      : findPlaceLongitude(birth.place) ?? DEFAULT_LONGITUDE;
+
+  // 真太阳时 = 北京时间 + (经度 - 120) × 4 分钟 + 均时差
+  const offsetMinutes = (longitude - 120) * 4 + equationOfTime(dayOfYear(year, month, day));
+  const base = Date.UTC(year, month - 1, day, hour, minute);
+  const corrected = new Date(base + Math.round(offsetMinutes) * 60_000);
+
+  const eightChar = Solar.fromYmdHms(
+    corrected.getUTCFullYear(),
+    corrected.getUTCMonth() + 1,
+    corrected.getUTCDate(),
+    corrected.getUTCHours(),
+    corrected.getUTCMinutes(),
+    0,
+  )
     .getLunar()
     .getEightChar();
 
-  const raw: Array<[string, string, string, string, string, string]> = [
-    [
-      "年",
-      eightChar.getYear(),
-      eightChar.getYearShiShenGan(),
-      eightChar.getYearNaYin(),
-      eightChar.getYearDiShi(),
-      "",
-    ],
-    [
-      "月",
-      eightChar.getMonth(),
-      eightChar.getMonthShiShenGan(),
-      eightChar.getMonthNaYin(),
-      eightChar.getMonthDiShi(),
-      "",
-    ],
-    [
-      "日",
-      eightChar.getDay(),
-      "日主",
-      eightChar.getDayNaYin(),
-      eightChar.getDayDiShi(),
-      "",
-    ],
-    [
-      "时",
-      eightChar.getTime(),
-      eightChar.getTimeShiShenGan(),
-      eightChar.getTimeNaYin(),
-      eightChar.getTimeDiShi(),
-      "",
-    ],
+  const raw: Array<[string, string, string, string, string]> = [
+    ["年", eightChar.getYear(), eightChar.getYearShiShenGan(), eightChar.getYearNaYin(), eightChar.getYearDiShi()],
+    ["月", eightChar.getMonth(), eightChar.getMonthShiShenGan(), eightChar.getMonthNaYin(), eightChar.getMonthDiShi()],
+    ["日", eightChar.getDay(), "日主", eightChar.getDayNaYin(), eightChar.getDayDiShi()],
+    ["时", eightChar.getTime(), eightChar.getTimeShiShenGan(), eightChar.getTimeNaYin(), eightChar.getTimeDiShi()],
   ];
 
   const counts: Record<string, number> = { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 };
@@ -129,8 +131,38 @@ export function buildChart(birth: BirthInfo): ChartResult | null {
   const taiYuan = eightChar.getTaiYuan();
   const mingGong = eightChar.getMingGong();
 
+  const daYun: ChartResult["daYun"] = [];
+  try {
+    const yun = eightChar.getYun(birth.gender === "female" ? 0 : 1);
+    const list = yun.getDaYun();
+    for (const item of list.slice(1, 6)) {
+      const ganZhi = item.getGanZhi();
+      if (!ganZhi) continue;
+      daYun.push({
+        range: `${item.getStartYear()}-${item.getEndYear()}`,
+        ganZhi,
+        age: `${item.getStartAge()}-${item.getEndAge()} 岁`,
+      });
+    }
+  } catch {
+    // 缺性别时算不了大运，跳过即可
+  }
+
   const strongElement = wuXing[0];
   const weakElement = wuXing[wuXing.length - 1];
+  const placeLabel = birth.place ? birth.place : "未填城市";
+  const solarClock = `${pad(corrected.getUTCHours())}:${pad(corrected.getUTCMinutes())}`;
+  const delta = Math.round(offsetMinutes);
+
+  const lines = [
+    `真太阳时 ${solarClock}（${placeLabel} ${longitude.toFixed(2)}°E，比北京时间 ${delta >= 0 ? "+" : ""}${delta} 分钟）`,
+    `四柱：${raw.map(([label, ganZhi, shen]) => `${label}${ganZhi}（${shen}）`).join("　")}`,
+    `日主 ${dayGan}${dayMasterElement}｜胎元 ${taiYuan}｜命宫 ${mingGong}`,
+    `五行：${wuXing.map((item) => `${item.element}${item.count}`).join(" ")}（${strongElement.element}偏旺，${weakElement.element}偏弱）`,
+    daYun.length > 0
+      ? `大运：${daYun.map((item) => `${item.ganZhi}（${item.age}）`).join(" → ")}`
+      : "大运：填了性别才能排顺逆",
+  ];
 
   return {
     pillars,
@@ -139,14 +171,11 @@ export function buildChart(birth: BirthInfo): ChartResult | null {
     wuXing,
     taiYuan,
     mingGong,
-    summaryLine: `四柱 ${pillars}；日主 ${dayGan}${dayMasterElement}；十神 ${shiShen}；五行 ${wuXing
+    solarTime: `${solarClock}（修正 ${delta >= 0 ? "+" : ""}${delta} 分钟）`,
+    daYun,
+    summaryLine: `真太阳时 ${solarClock}；四柱 ${pillars}；日主 ${dayGan}${dayMasterElement}；十神 ${shiShen}；五行 ${wuXing
       .map((item) => `${item.element}${item.count}`)
-      .join(" ")}`,
-    lines: [
-      `四柱：${raw.map(([label, ganZhi, shen]) => `${label}${ganZhi}（${shen}）`).join("　")}`,
-      `日主：${dayGan}${dayMasterElement}｜胎元 ${taiYuan}｜命宫 ${mingGong}`,
-      `五行：${wuXing.map((item) => `${item.element}${item.count}`).join(" ")}（${strongElement.element}偏旺，${weakElement.element}偏弱）`,
-      `纳音/地势：${raw.map(([label, , , nayin, diShi]) => `${label}${nayin}·${diShi}`).join("　")}`,
-    ],
+      .join(" ")}${daYun.length > 0 ? `；大运 ${daYun.map((item) => item.ganZhi).join("、")}` : ""}`,
+    lines,
   };
 }

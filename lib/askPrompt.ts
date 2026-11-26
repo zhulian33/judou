@@ -27,7 +27,7 @@ export function buildAskPrompt(req: AskRequest): string {
   const scene = req.scene ? `\n提问场景：${SCENE_LABEL[req.scene]}` : "";
   const chart = req.birth ? buildChart(req.birth) : null;
   const chartBlock = chart
-    ? `\n\n## 用户命盘（本机排四柱，仅作民俗参考）\n${chart.summaryLine}\n日主为 ${chart.dayMaster}。只可以说「按传统说法，${chart.dayMaster} 日主的人更吃哪一套沟通方式」，不要断言性格或命运。`
+    ? `\n\n## 用户命盘（本机按真太阳时排，仅作民俗参考）\n${chart.summaryLine}\n日主为 ${chart.dayMaster}${chart.dayMasterElement}。\n可以说「按传统说法，${chart.dayMaster}日主的人更吃哪一套沟通方式」，可以提到五行偏旺偏弱对应的做事节奏；不要断言性格、健康或命运，也不要预测具体事件。`
     : "";
 
   return `## 今日排盘（系统实时计算，只能引用这些）

@@ -44,6 +44,15 @@ declare module "lunar-javascript" {
     getTimeDiShi(): string;
     getTaiYuan(): string;
     getMingGong(): string;
+    getYun(gender: number): {
+      getDaYun(): Array<{
+        getStartYear(): number;
+        getEndYear(): number;
+        getGanZhi(): string;
+        getStartAge(): number;
+        getEndAge(): number;
+      }>;
+    };
   }
 
   interface LunarDay {

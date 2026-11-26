@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ArrowUpRightIcon } from "@/components/Icons";
+import { PLACES } from "@/lib/places";
 import type { AskResult, Scene } from "@/lib/types";
 
 const PRESETS = [
@@ -26,28 +27,47 @@ export function AskPanel({ scene }: { scene: Scene }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [birthDate, setBirthDate] = useState("");
-  const [birthHour, setBirthHour] = useState("");
+  const [birthTime, setBirthTime] = useState("");
+  const [birthPlace, setBirthPlace] = useState("");
+  const [birthGender, setBirthGender] = useState("");
   const [showBirth, setShowBirth] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem("judou.birth.v1");
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { date?: string; hour?: string };
+      const parsed = JSON.parse(raw) as {
+        date?: string;
+        time?: string;
+        place?: string;
+        gender?: string;
+      };
       if (parsed.date) setBirthDate(parsed.date);
-      if (parsed.hour) setBirthHour(parsed.hour);
+      if (parsed.time) setBirthTime(parsed.time);
+      if (parsed.place) setBirthPlace(parsed.place);
+      if (parsed.gender) setBirthGender(parsed.gender);
     } catch {
       // 忽略损坏的本地数据
     }
   }, []);
 
-  function saveBirth(date: string, hour: string) {
-    setBirthDate(date);
-    setBirthHour(hour);
-    window.localStorage.setItem(
-      "judou.birth.v1",
-      JSON.stringify({ date, hour }),
-    );
+  function saveBirth(patch: {
+    date?: string;
+    time?: string;
+    place?: string;
+    gender?: string;
+  }) {
+    const next = {
+      date: patch.date ?? birthDate,
+      time: patch.time ?? birthTime,
+      place: patch.place ?? birthPlace,
+      gender: patch.gender ?? birthGender,
+    };
+    setBirthDate(next.date);
+    setBirthTime(next.time);
+    setBirthPlace(next.place);
+    setBirthGender(next.gender);
+    window.localStorage.setItem("judou.birth.v1", JSON.stringify(next));
   }
 
   async function ask() {
@@ -71,7 +91,16 @@ export function AskPanel({ scene }: { scene: Scene }) {
             ? {
                 birth: {
                   date: birthDate,
-                  ...(birthHour ? { hour: Number(birthHour) } : {}),
+                  ...(birthTime
+                    ? {
+                        hour: Number(birthTime.split(":")[0]),
+                        minute: Number(birthTime.split(":")[1]),
+                      }
+                    : {}),
+                  ...(birthPlace ? { place: birthPlace } : {}),
+                  ...(birthGender === "male" || birthGender === "female"
+                    ? { gender: birthGender }
+                    : {}),
                 },
               }
             : {}),
@@ -149,29 +178,48 @@ export function AskPanel({ scene }: { scene: Scene }) {
           </span>
         </button>
         {showBirth ? (
-          <div className="mt-2.5 flex gap-2">
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(event) => saveBirth(event.target.value, birthHour)}
-              className="flex-1 rounded-lg border border-ink-950/10 bg-white px-2.5 py-2 text-[12px] text-ink-800 outline-none"
-            />
-            <select
-              value={birthHour}
-              onChange={(event) => saveBirth(birthDate, event.target.value)}
-              className="w-[110px] rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
-            >
-              <option value="">时辰不详</option>
-              {Array.from({ length: 24 }, (_, index) => (
-                <option key={index} value={index}>
-                  {`${index}:00`}
-                </option>
-              ))}
-            </select>
+          <div className="mt-2.5 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={birthDate}
+                onChange={(event) => saveBirth({ date: event.target.value })}
+                className="flex-1 rounded-lg border border-ink-950/10 bg-white px-2.5 py-2 text-[12px] text-ink-800 outline-none"
+              />
+              <input
+                type="time"
+                value={birthTime}
+                onChange={(event) => saveBirth({ time: event.target.value })}
+                className="w-[110px] rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={birthPlace}
+                onChange={(event) => saveBirth({ place: event.target.value })}
+                className="flex-1 rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
+              >
+                <option value="">出生城市（算真太阳时）</option>
+                {PLACES.map((place) => (
+                  <option key={place.name} value={place.name}>
+                    {place.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={birthGender}
+                onChange={(event) => saveBirth({ gender: event.target.value })}
+                className="w-[110px] rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
+              >
+                <option value="">性别（排大运）</option>
+                <option value="male">男</option>
+                <option value="female">女</option>
+              </select>
+            </div>
           </div>
         ) : null}
         <p className="mt-1.5 text-[10px] leading-4 text-ink-400">
-          排盘必须有出生年月日时；不填就只按今天的黄历回答。生辰只存在本机。
+          排盘按真太阳时：时间精确到分钟，城市用来修正经度；性别只影响大运顺逆。生辰只存本机。
         </p>
       </div>
 
@@ -223,6 +271,7 @@ export function AskPanel({ scene }: { scene: Scene }) {
                 <span className="text-[10px] text-ink-500">
                   日主 {result.chart.dayMaster}
                   {result.chart.dayMasterElement}
+                  {result.chart.solarTime ? ` · ${result.chart.solarTime}` : ""}
                 </span>
               </div>
               <p className="mt-1.5 font-serif text-[15px] tracking-[0.08em] text-ink-950">

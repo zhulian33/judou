@@ -129,6 +129,14 @@ export interface BirthInfo {
   date: string;
   /** 0-23，不填按 12 点算 */
   hour?: number;
+  /** 0-59，不填按 0 分算 */
+  minute?: number;
+  /** 出生城市名，用于真太阳时 */
+  place?: string;
+  /** 经度（东经为正），优先于 place */
+  longitude?: number;
+  /** 大运顺逆要用 */
+  gender?: "male" | "female";
 }
 
 export interface AskRequest {
@@ -144,6 +152,8 @@ export interface AskChart {
   dayMasterElement: string;
   lines: string[];
   wuXing: Array<{ element: string; count: number }>;
+  solarTime?: string;
+  daYun?: Array<{ range: string; ganZhi: string; age: string }>;
 }
 
 export interface AskResult {
