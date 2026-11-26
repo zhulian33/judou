@@ -131,6 +131,8 @@ export async function POST(request: Request) {
   const question = readString(body.question);
   const scene = readString(body.scene);
   const date = readString(body.date);
+  const focusRaw = readString(body.focus);
+  const focus: "self" | "partner" = focusRaw === "partner" ? "partner" : "self";
   const birthRaw = isRecord(body.birth) ? body.birth : null;
   const birthDate = birthRaw ? readString(birthRaw.date) : "";
   const birthHour = birthRaw ? Number(birthRaw.hour) : Number.NaN;
@@ -175,8 +177,16 @@ export async function POST(request: Request) {
     );
   }
 
+  if (focus === "partner" && !partnerDate) {
+    return NextResponse.json(
+      { error: "看 TA 要先填 TA 的生辰（日期即可，越全越准）。" },
+      { status: 400 },
+    );
+  }
+
   const payload: AskRequest = {
     question,
+    focus,
     ...(scene && isScene(scene) ? { scene: scene as Scene } : {}),
     ...(date ? { date } : {}),
     ...(birthDate

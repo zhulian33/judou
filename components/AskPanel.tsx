@@ -36,6 +36,7 @@ export function AskPanel({ scene }: { scene: Scene }) {
   const [partnerPlace, setPartnerPlace] = useState("");
   const [partnerGender, setPartnerGender] = useState("");
   const [showPartner, setShowPartner] = useState(false);
+  const [focus, setFocus] = useState<"self" | "partner">("self");
 
   useEffect(() => {
     try {
@@ -124,6 +125,7 @@ export function AskPanel({ scene }: { scene: Scene }) {
         body: JSON.stringify({
           question,
           scene,
+          focus,
           ...(birthDate
             ? {
                 birth: {
@@ -190,6 +192,29 @@ export function AskPanel({ scene }: { scene: Scene }) {
         <span className="pb-0.5 text-[11px] text-ink-400">
           {SCENE_LABEL[scene]} · 按当天排盘回答
         </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-cream-100 p-1">
+        {[
+          { value: "self" as const, label: "只看自己" },
+          { value: "partner" as const, label: "看看 TA" },
+        ].map((item) => (
+          <button
+            key={item.value}
+            type="button"
+            onClick={() => {
+              setFocus(item.value);
+              if (item.value === "partner") setShowPartner(true);
+            }}
+            className={`rounded-lg px-3 py-2 text-[12px] font-medium transition-colors ${
+              focus === item.value
+                ? "bg-white text-ink-950 shadow-soft"
+                : "text-ink-400 hover:text-ink-700"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
       <textarea
@@ -285,7 +310,11 @@ export function AskPanel({ scene }: { scene: Scene }) {
         >
           <span>
             TA 的生辰
-            {partnerDate ? ` · ${partnerDate}` : "（可选，填了做合盘）"}
+            {partnerDate
+              ? ` · ${partnerDate}`
+              : focus === "partner"
+                ? "（看 TA 需要填）"
+                : "（可选，填了做合盘）"}
           </span>
           <span className="text-[10px] text-ink-400">
             {showPartner ? "收起" : "填写"}

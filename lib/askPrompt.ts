@@ -23,7 +23,8 @@ export const ASK_SYSTEM_PROMPT = `你是「句读」里的黄历顾问。
 2. 不做确定性预测（不要说「一定会」「必然」），用「更适合」「不太建议」这种分寸。
 3. 不给医疗、投资、法律结论；涉及这些只提醒找专业的人。
 4. 回答落在「今天怎么做」上：能做什么、避开什么、什么时候做。
-5. 宜忌要翻译成人话：不要直接说「今天宜结婚」或者「挑结婚这类事做」，也不要拿「破土/安葬」去吓人。把宜理解成「适合推进、适合沟通、适合出门」，把忌理解成「别急着定、别硬推」。
+5. 回答里不要罗列宜/忌原文（不要写「适合祭祀、解除、破屋、求医」这种），都翻成一句话：今天适合推进 / 今天别硬来 / 今天适合把话说开。原始宜忌只放在 basis 里。
+6. 宜忌要翻译成人话：不要直接说「今天宜结婚」或者「挑结婚这类事做」，也不要拿「破土/安葬」去吓人。把宜理解成「适合推进、适合沟通、适合出门」，把忌理解成「别急着定、别硬推」。
 5. 只输出 JSON：{"answer": "...", "basis": ["..."], "caution": "..."}。
    answer 两到三句，最多 90 个汉字；basis 是 2-3 条你实际用到的排盘依据；caution 一句提醒。`;
 
@@ -34,6 +35,10 @@ export function buildAskPrompt(req: AskRequest): string {
   const partnerChart = req.partnerBirth ? buildChart(req.partnerBirth) : null;
   const synastry =
     chart && partnerChart ? buildSynastry(chart, partnerChart) : null;
+  const focusBlock =
+    req.focus === "partner"
+      ? "\n\n## 这次看的是 TA\n用户想了解 TA 的状态和相处方式。只根据 TA 的命盘说 TA 的性格底子、承受节奏、吃哪一套沟通；不要替 TA 说「TA 心里怎么想你」，也不要预测 TA 的行动。"
+      : "\n\n## 这次看的是用户自己\n重点说用户自己的节奏和该怎么调整，不要把结论安到 TA 身上。";
   const partnerBlock = synastry
     ? `\n\n## 合盘（两个人，只讲相处方式）\n${synastry.relation}\n${synastry.note}\n${synastry.selfLine}\n${synastry.partnerLine}\n回答涉及两人时，只能引用这个关系，不要预测「能不能在一起」。`
     : "";
@@ -51,7 +56,7 @@ export function buildAskPrompt(req: AskRequest): string {
 方位：${almanac.sha}
 今日五行：${almanac.nayin}
 吉位：喜神${almanac.xiDirection}，财神${almanac.caiDirection}
-今日总述：${almanac.summary}${chartBlock}${partnerBlock}
+今日总述：${almanac.summary}${focusBlock}${chartBlock}${partnerBlock}
 
 ## 用户的问题${scene}
 ${req.question.trim()}

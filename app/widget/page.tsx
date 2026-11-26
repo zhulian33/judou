@@ -65,6 +65,7 @@ export default function WidgetPage() {
   const [partnerPlace, setPartnerPlace] = useState("");
   const [partnerGender, setPartnerGender] = useState("");
   const [showPartner, setShowPartner] = useState(false);
+  const [focus, setFocus] = useState<"self" | "partner">("self");
   const [registerOpen, setRegisterOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { account, register } = useAccount();
@@ -241,6 +242,7 @@ export default function WidgetPage() {
         body: JSON.stringify({
           question,
           scene,
+          focus,
           ...(birthDate
             ? {
                 birth: {
@@ -434,20 +436,18 @@ export default function WidgetPage() {
               ))}
             </div>
 
-            {message.trim().length >= 20 ? (
-              <button
-                type="button"
-                onClick={summarize}
-                disabled={summarizing}
-                className="mt-3 w-full rounded-xl border border-black/12 bg-white px-4 py-2.5 text-[11px] font-medium text-ink-600 disabled:opacity-60"
-              >
-                {summarizing
-                  ? "正在拆这段…"
-                  : summary
-                    ? "重新提取核心"
-                    : "先提取核心"}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={summarize}
+              disabled={summarizing || message.trim().length < 20}
+              className="mt-3 w-full rounded-xl border border-black/12 bg-white px-4 py-2.5 text-[11px] font-medium text-ink-600 disabled:opacity-45"
+            >
+              {summarizing
+                ? "正在拆这段…"
+                : summary
+                  ? "重新提取核心"
+                  : "先提取核心"}
+            </button>
 
             <button
               type="button"
@@ -571,6 +571,29 @@ export default function WidgetPage() {
                 <p className="text-[9px] tracking-[0.12em] text-ink-400">
                   先知
                 </p>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-cream-100 p-1">
+                {[
+                  { value: "self" as const, label: "只看自己" },
+                  { value: "partner" as const, label: "看看 TA" },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => {
+                      setFocus(item.value);
+                      if (item.value === "partner") setShowPartner(true);
+                    }}
+                    className={`rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors ${
+                      focus === item.value
+                        ? "bg-white text-ink-950 shadow-soft"
+                        : "text-ink-400"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
 
               <textarea
@@ -717,7 +740,11 @@ export default function WidgetPage() {
                 >
                   <span>
                     TA 的生辰（合盘）
-                    {partnerDate ? ` · ${partnerDate}` : ""}
+                    {partnerDate
+                      ? ` · ${partnerDate}`
+                      : focus === "partner"
+                        ? " · 必填"
+                        : ""}
                   </span>
                   <span>{showPartner ? "收起" : "填写"}</span>
                 </button>

@@ -148,6 +148,8 @@ export interface AskRequest {
   birth?: BirthInfo;
   /** 对方生辰，填了才做合盘 */
   partnerBirth?: BirthInfo;
+  /** self = 只看自己；partner = 看 TA / 合盘 */
+  focus?: "self" | "partner";
 }
 
 export interface AskChart {

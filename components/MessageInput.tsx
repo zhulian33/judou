@@ -256,20 +256,18 @@ export function MessageInput({
         </p>
       ) : null}
 
-      {message.trim().length >= 20 ? (
-        <button
-          type="button"
-          onClick={onSummarize}
-          disabled={summarizing}
-          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-950/12 bg-white px-4 py-3 text-[13px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:cursor-wait disabled:opacity-60"
-        >
-          {summarizing
-            ? "正在拆这段…"
-            : summaryReady
-              ? "重新提取核心"
-              : "先提取核心意思"}
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={onSummarize}
+        disabled={summarizing || message.trim().length < 20}
+        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-950/12 bg-white px-4 py-3 text-[13px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {summarizing
+          ? "正在拆这段…"
+          : summaryReady
+            ? "重新提取核心"
+            : "先提取核心意思"}
+      </button>
 
       <button
         type="submit"
