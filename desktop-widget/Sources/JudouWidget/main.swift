@@ -13,6 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
   private var userResized = false
   /// 程序自己调整高度时，不要被当成用户拖动。
   private var isAutoResizing = false
+  /// 记录自己拉起的服务进程，退出或异常结束后下次启动能清理掉。
+  private let pidFile = "/tmp/judou-widget-server.pid"
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // 只允许一个句读实例，避免重复启动本地服务互相抢端口。
@@ -26,6 +28,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         return
       }
     }
+
+    killPreviousServer()
 
     NSApp.setActivationPolicy(.accessory)
     setupStatusItem()
@@ -242,6 +246,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     ]
     try? process.run()
     serverProcess = process
+    try? "\(process.processIdentifier)".write(
+      toFile: pidFile,
+      atomically: true,
+      encoding: .utf8
+    )
+  }
+
+  /// 上次没正常退出时留下的服务进程，直接收掉，避免端口一个个被占满。
+  private func killPreviousServer() {
+    guard
+      let raw = try? String(contentsOfFile: pidFile, encoding: .utf8),
+      let pid = Int32(raw.trimmingCharacters(in: .whitespacesAndNewlines)),
+      pid > 0
+    else { return }
+
+    kill(pid, SIGTERM)
+    try? FileManager.default.removeItem(atPath: pidFile)
   }
 
   private func waitForServer(port: Int, attempts: Int) {
@@ -355,13 +376,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
   }
 
   private func stopOwnServer() {
-    if ownsServer {
-      serverProcess?.terminate()
-      let killer = Process()
-      killer.executableURL = URL(fileURLWithPath: "/bin/zsh")
-      killer.arguments = ["-lc", "pkill -f 'next.*-p \(widgetPort)' >/dev/null 2>&1 || true"]
-      try? killer.run()
+    if ownsServer, let pid = serverProcess?.processIdentifier {
+      kill(pid, SIGTERM)
     }
+    try? FileManager.default.removeItem(atPath: pidFile)
   }
 
   func applicationWillTerminate(_ notification: Notification) {
