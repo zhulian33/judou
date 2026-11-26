@@ -7,11 +7,10 @@ import {
   ChevronDownIcon,
   SparkIcon,
 } from "@/components/Icons";
-import { EXAMPLE_MESSAGES, OPENER_EXAMPLES } from "@/lib/examples";
+import { EXAMPLE_MESSAGES } from "@/lib/examples";
 import type { ExampleMessage, Gender } from "@/lib/types";
 
 interface MessageInputProps {
-  mode: "reply" | "opener";
   message: string;
   myWords: string;
   context: string;
@@ -30,7 +29,6 @@ interface MessageInputProps {
 }
 
 export function MessageInput({
-  mode,
   message,
   myWords,
   context,
@@ -47,7 +45,6 @@ export function MessageInput({
   summaryReady,
   onPickExample,
 }: MessageInputProps) {
-  const isOpener = mode === "opener";
   const [showContext, setShowContext] = useState(false);
   const [showGender, setShowGender] = useState(false);
   useEffect(() => {
@@ -73,14 +70,14 @@ export function MessageInput({
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold tracking-[0.22em] text-ember-600">
-            {isOpener ? "02 / 主动开口" : "02 / 粘贴原话"}
+            "02 / 粘贴原话"
           </p>
           <h2 className="mt-1 text-lg font-semibold text-ink-950">
-            {isOpener ? "你想找对方说什么？" : "把那条消息放进来"}
+            "把那条消息放进来"
           </h2>
         </div>
         <span className="pb-0.5 text-[11px] text-ink-400">
-          {message.length} / {isOpener ? 600 : 1999}
+          {message.length} / 1999
         </span>
       </div>
 
@@ -95,20 +92,16 @@ export function MessageInput({
         <textarea
           value={message}
           onChange={(event) => onMessageChange(event.target.value)}
-          maxLength={isOpener ? 600 : 1999}
-          rows={isOpener ? 4 : 5}
-          placeholder={
-            isOpener
-              ? "例如：想问问 TA 最近怎么样，但怕太突然。"
-              : "例如：我最近有点忙，晚点再说吧。"
-          }
+          maxLength={1999}
+          rows={5}
+          placeholder="例如：我最近有点忙，晚点再说吧。"
           onFocus={(event) => {
             const node = event.currentTarget;
             window.setTimeout(() => {
               node.scrollIntoView({ block: "center", behavior: "smooth" });
             }, 260);
           }}
-          aria-label={isOpener ? "想找对方说什么" : "要解读的消息"}
+          aria-label="要解读的消息"
           className="block min-h-[132px] w-full resize-none bg-transparent px-4 py-4 text-[16px] leading-7 text-ink-950 outline-none placeholder:text-ink-400/65"
         />
         <div className="pointer-events-none absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-cream-100 text-ember-500">
@@ -116,7 +109,6 @@ export function MessageInput({
         </div>
       </div>
 
-      {!isOpener ? (
       <div className="mt-3 rounded-xl border border-ink-950/10 bg-cream-50 px-3.5 py-3">
         <div className="flex items-center justify-between gap-2">
           <label
@@ -142,8 +134,6 @@ export function MessageInput({
           写一句就行，我会顺着你的意思改，不会替你换立场。
         </p>
       </div>
-      ) : null}
-
 
       <div className="mt-3">
         <button
@@ -233,7 +223,7 @@ export function MessageInput({
             试试：
           </span>
           <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
-            {(isOpener ? OPENER_EXAMPLES : EXAMPLE_MESSAGES).map((example) => (
+            {EXAMPLE_MESSAGES.map((example) => (
               <button
                 key={example.label}
                 type="button"

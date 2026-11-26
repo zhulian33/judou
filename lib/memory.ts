@@ -1,6 +1,6 @@
 export interface MemoryEntry {
   contactId: string;
-  kind: "reply" | "opener";
+  kind: "reply";
   summary: string;
   createdAt: number;
 }

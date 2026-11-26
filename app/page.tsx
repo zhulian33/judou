@@ -103,7 +103,7 @@ export default function Home() {
     setMemoryEntries(activeId ? getContactMemory(activeId) : []);
   }, [activeId, hydrated]);
 
-  function remember(kind: "reply" | "opener", summary: string) {
+  function remember(kind: "reply", summary: string) {
     if (!activeId) {
       return;
     }
@@ -457,7 +457,6 @@ export default function Home() {
 
           <MessageInput
             key={`${activeId ?? "temporary"}-${mode}`}
-            mode={mode}
             message={message}
             myWords={myWords}
             context={context}

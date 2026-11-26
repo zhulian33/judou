@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { clientKey, rateLimit } from "@/lib/rateLimit";
+
 import { buildDemoResult } from "@/lib/demo";
 import { buildPrompt, SYSTEM_PROMPT } from "@/lib/prompt";
 import { buildGuidance } from "@/lib/guidance";
@@ -637,6 +639,17 @@ function normalizeResult(
 }
 
 export async function POST(request: Request) {
+  const limitResult = rateLimit(clientKey(request, "analyze"), 20);
+  if (!limitResult.ok) {
+    return NextResponse.json(
+      { error: "太频繁了，休息一下再试。" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limitResult.retryAfter) },
+      },
+    );
+  }
+
   let body: unknown;
 
   try {

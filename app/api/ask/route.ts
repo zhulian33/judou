@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { clientKey, rateLimit } from "@/lib/rateLimit";
+
 import { isValidDateString } from "@/lib/almanac";
 import { buildAskDemo } from "@/lib/askDemo";
 import { buildChart, buildSynastry } from "@/lib/chart";
@@ -116,6 +118,17 @@ async function askModel(request: AskRequest): Promise<AskResult | null> {
 }
 
 export async function POST(request: Request) {
+  const limitResult = rateLimit(clientKey(request, "ask"), 30);
+  if (!limitResult.ok) {
+    return NextResponse.json(
+      { error: "太频繁了，休息一下再试。" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limitResult.retryAfter) },
+      },
+    );
+  }
+
   let body: unknown;
 
   try {

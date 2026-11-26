@@ -1,125 +1,260 @@
-# 句读JUDOU · 不会回的消息，我帮你读懂
+# 句读 JUDOU
 
-> 原型开发中 · 当前版本用于体验和测试
+> 不会回的消息，先读懂，再决定怎么说。
 
-粘贴一条看不懂、不会回的消息，或直接说你为什么想找对方。句读会结合场景和对象资料，给出内心 OS、下一句预测和可直接发送的话。
+一个移动端优先的 Web 工具：把对方的话贴进来，先拆清楚 TA 在想什么，再给你方向；配一个常驻桌面的电子黄历小组件，可以就着当天排盘问问题、也可以看两个人的合盘。
+
+<p>
+  <img src="preview/home-mobile.png" width="240" alt="主页" />
+  <img src="preview/result-mobile.png" width="240" alt="解读结果" />
+  <img src="preview/widget.png" width="220" alt="桌面小组件" />
+</p>
+
+---
 
 ## 功能
-- 只做分析，不给现成回复：潜台词、语气、2–3 种可能、判断可信度、还缺什么信息
-- 内心 OS：先显示对方可能在心里的原话，再预测下一句
-- 语气助词：识别「吧、呢、啊、嘛、哦」等真实出现的语气词
-- 个人意图：可以填“我自己想怎么回”，句读会顺着你的立场改，不擅自换立场
-- 先知（原「主动开口」）：就着当天排盘问具体问题；填了生日+时辰会本机排四柱（含十神、五行、胎元、命宫、纳音地势）
-- 提取核心：长消息 / 一大段吐槽，一键压成「核心一句 + 2–4 条事实 + 真正的问题 + 现在该做什么」
-- 问一句（桌面端）：按当天真实黄历回答「今天适不适合约 TA / 谈事 / 花钱」；填了生辰会本机排四柱一起参考
-- 暧昧好感：当前好感度、趋势，以及每条回复的「好感加成」
-- 关系信任：非暧昧场景显示信任度/配合度和趋势
-- 指导方向：对方现在的落点、该往哪走、要守住什么、先别做什么（不写可直接发送的台词）
-- 撤退信号：像「别聊了」「不聊了」「算了」这类话，默认读成嫌烦/想收场，不硬解释成「在关心你」
-- 认清对象：先判断 TA 在说谁——说你 / 说 TA 自己 / 说别人（分享同事朋友的瓜），不会把别人的事算成对你的态度
-- 分清场景：如果贴进来的是你自己在讲一整件事（不是对方发来的一句话），会自动切换成「你在讲这件事」的分析口吻，不再假装那是 TA 说的
-- 先知守边界：问「她有没有喜欢的人」这类别人心思的问题，会直接说排盘看不出，再把话拉回今天该怎么动
-- 电子黄历：真实日期、农历、宜忌、冲煞、五行、吉位、学习/沟通/钱三块建议
-- 桌面小组件：默认就是展开的详细黄历，底部并排「发一句」（主动开口）和「回一句」（解读回复）
-- 桌面窗口可自由缩放；窗口变宽后会自动切换横向排版
-- 多对象库：对象名称、关系、性别、备注存在本机，切换对象自动带资料
-- 对话记忆：每个对象保存最近 5 次分析摘要，下次自动作为上下文参考
-- 性别保护：不填性别时全程使用「对方 / TA」，不会根据名字或语气乱猜
-- 黑白界面：默认黑白，好感度/信任度越高，背景色越明显
-- 场景预设：暧昧 / 职场 / 家庭 / 客服 / 朋友
-- 一键复制回复
 
-> 电子黄历只做传统民俗参考，不构成命理或关系决策建议。
+**回一句（消息解读）**
 
-## 排盘说明
-- 真正的排盘需要**出生年月日 + 出生时间（精确到分）+ 出生城市**，没有生辰就算不出个人命盘
-- 排盘引擎用的是 `lunar-javascript`（寿星天文历同源算法），本机计算：不联网、不要 API Key、结果可复现
-- 支持真太阳时：按出生地经度 + 均时差把北京时间换算成当地真太阳时，成都这类偏西的城市会差一小时以上
-- 输出：四柱（含十神）、日主、胎元、命宫、五行统计、纳音地势，填了性别还能排大运
-- 为什么不用第三方排盘 API：主流接口都要付费 Key，字段口径不一致，还会有可用性风险；本地算法更稳，也方便离线演示
-- 生辰只存在本机 `localStorage`，不上传；命盘只作为民俗参考，不做确定性预测
+- 先提取核心：长消息 / 一大段吐槽 → 一句话核心 + 2–4 条事实 + 真正的问题 + 还不确定什么 + 你现在可以做
+- 内心 OS：用 TA 的第一人称还原那句话背后在想什么
+- 下一句预测：结合场景给最可能的回应，标可信度
+- 指导方向：TA 的落点、你该往哪走、要守住什么、先别做什么（只给方向，不写现成台词）
+- 多假设：2–3 种可能 + 各自的判断依据
+- 认清对象：先判断 TA 在说谁——说你 / 说 TA 自己 / 说别人；也是在讲整件事时自动切换口吻
+- 撤退信号：`别聊了` `算了` `随便你` 默认读成嫌烦/想收场，不硬解释成「在关心你」
 
-## 电子黄历与注册
-- 黄历数据由 `lunar-javascript` 计算，不依赖外部黄历接口
-- 所有展示文案为简体中文
-- 注册是本机体验注册，数据保存在浏览器 `localStorage`
-- 正式上线时可将注册逻辑替换成真实账号接口
-- 主页面不再展示黄历，黄历只在桌面小组件里出现
+**先知（排盘问答）**
 
-## 桌面小组件
-```bash
-# 方式一：双击
-./启动桌面黄历.command
+- 只看自己 / 看看 TA 两种视角
+- 问题预设：今天适合约 TA / 把话说开 / 开口道歉 / 谈钱
+- 填生辰（日期 + 时间精确到分 + 出生城市 + 性别）才排盘，不填只按当天黄历答
+- 真太阳时、四柱、十神、胎元、命宫、五行统计、纳音地势、大运
+- 两边都填 → 合盘：日主五行生克 + 互补 + 相处建议
+- 守边界：问「她有没有喜欢的人」这类别人的心思，直接说排盘看不出
 
-# 方式二：构建后直接打开
-npm run build          # 首次使用先构建一次，启动更快更稳
-zsh desktop-widget/build-app.sh
-open "desktop-widget/句读桌面黄历.app"
+**桌面小组件（macOS）**
+
+- 常驻的小窗，默认就是完整黄历，可拖动、可缩放，宽度超过 620px 自动变左右两栏
+- 底部两个入口：**先知**（排盘问答）、**回一句**（消息解读）
+- 自带本地服务管理：端口探测 → 构建号校验 → 自动拉起 → 异常退出自动重启一次 → 退出即清理
+
+---
+
+## 架构
+
+```
+句读/
+├── app/
+│   ├── page.tsx                # 主工作台：回一句 / 先知
+│   ├── widget/page.tsx         # 桌面小组件的黄历视图
+│   ├── layout.tsx
+│   └── api/
+│       ├── analyze/route.ts    # 消息解读（结构化 JSON）
+│       ├── summarize/route.ts  # 长文提取核心
+│       ├── ask/route.ts        # 排盘问答（可带双人合盘）
+│       ├── almanac/route.ts    # 当天/指定日期黄历
+│       └── health/route.ts     # 健康检查
+├── components/                 # MessageInput / SummaryCard / GuidanceCard / AskPanel ...
+├── lib/
+│   ├── prompt.ts               # 解读提示词（含 few-shot、人称与边界规则）
+│   ├── askPrompt.ts            # 排盘问答提示词
+│   ├── summarizePrompt.ts      # 提取核心提示词
+│   ├── chart.ts                # 四柱 / 真太阳时 / 大运 / 合盘
+│   ├── places.ts               # 城市经度表
+│   ├── knowledge.ts            # 沟通框架知识库
+│   ├── guidance.ts             # 没有模型时的方向兜底
+│   ├── demo*.ts                # 无模型时的本地规则结果
+│   ├── safety.ts               # 内容安全过滤
+│   └── rateLimit.ts            # 单实例内存限流
+├── desktop-widget/             # macOS Swift + WKWebView 桌面端
+└── preview/                    # 界面截图
 ```
 
-打开就是完整黄历，不再需要点“展开”。窗口可自由拖动、缩放；宽度超过 620 后自动切成左右两栏。
+数据流：
 
-底部两个按钮：
-- **先知**（黑底）：就着今天的排盘问具体问题，比如「今天适合约 TA 吗」，回答里会列出用的宜忌依据；填生日会显示命盘
-- **回一句**（白底黑字）：贴对方的话进来，先给内心 OS、下一句，再给指导方向（不写现成台词）
+```
+输入 → /api/{analyze|summarize|ask}
+     → buildPrompt（规则 + few-shot + 知识库 + 当天排盘）
+     → OpenAI 兼容接口（或本地规则兜底）
+     → 结构校验 / 字段归一
+     → 结构化 JSON → 前端渲染
+```
 
-桌面端名称是 **句读JUDOU**，图标为「逗号」标志。
+对象库、对话记忆、生辰都只存在浏览器 `localStorage`，不上传服务器。
 
-小组件的启动逻辑：
-- 先检查 `127.0.0.1:3211`、`4321` 上有没有可用的句读服务，并且核对构建号，避免连到旧版本
-- 两个端口都不通时，自己在空闲端口拉起 `next start`（没有构建则回落 `next dev`）
-- 端口被别的程序占用会自动换下一个端口，不会再出现两个实例抢端口
-- 同一时间只允许运行一个句读桌面实例，重复双击会直接把已有窗口调到前面
+---
 
-### 桌面端显示「句读没有启动」
-1. 点页面上的“重新连接”；
-2. 确认电脑装了 Node.js：`node -v`；
-3. 终端进项目目录执行 `npm install && npm run build`；
-4. 还不行就看日志：`/tmp/judou-widget-3211.log` 或 `/tmp/judou-widget-4321.log`。
+## API
 
-> 改完代码后执行一次 `npm run build`。桌面端会比对构建号，发现旧服务就自动另起一个新端口，不会再把旧界面当成新版本。
+所有接口都是 `POST`（`/api/almanac`、`/api/health` 为 `GET`），返回 JSON，错误统一为 `{ "error": "..." }`。
 
-## 分析框架
-Prompt 中接入了以下公开框架，并在结果页提供折叠说明：
-- [主动倾听](https://www.helpguide.org/relationships/communication/active-listening)：内容与情绪双通道，复述、总结、开放式问题
-- [Gottman 四骑士](https://www.gottman.com/blog/the-four-horsemen-recognizing-criticism-contempt-defensiveness-and-stonewalling/)：批评、轻蔑、防御、冷处理
-- [自信表达](https://www.cci.health.wa.gov.au/Resources/Looking-After-Yourself/Assertiveness)：事实、感受、具体请求、边界
-- [非暴力沟通](https://www.cnvc.org/learn-nvc/what-is-nvc)：观察、感受、需要、请求
-- [高语境沟通](https://en.wikipedia.org/wiki/High-context_and_low-context_cultures)：单条消息不能替代关系背景
-- [Grice 会话含义](https://en.wikipedia.org/wiki/Cooperative_principle)：字面绕开重点时，要结合语境理解言外之意
-- [Brown & Levinson 礼貌理论](https://en.wikipedia.org/wiki/Politeness_theory)：请求、拒绝和批评常会顾全面子
-- [媒介丰富度理论](https://en.wikipedia.org/wiki/Media_richness_theory)：文字消息信息量有限，不能过度确定
-- [归因理论](https://en.wikipedia.org/wiki/Attribution_(psychology))：一次行为不等于稳定人格
+### `POST /api/analyze`
 
-## 技术栈
-Next.js 14 + TypeScript + Tailwind CSS + OpenAI 兼容接口，部署于 Vercel。
+```json
+{
+  "message": "我们还是别聊了。",
+  "scene": "flirt",
+  "myWords": "我想说我还在意",
+  "context": "连续聊了两周",
+  "gender": "unknown",
+  "contactName": "小林"
+}
+```
 
-接口：
-- `/api/analyze`：回复 TA
-- `/api/opener`：主动开口
-- `/api/ask`：按当天排盘回答具体问题（桌面端「问一句」），可带生辰排四柱
-- `/api/summarize`：长文本提取核心
-- `/api/almanac`：电子黄历数据
+返回：`subtext` `emotion` `intent` `risk` `thoughts` `particles` `readings` `missingInfo` `nextLine` `guidance` `subject` `framing`，以及 `affection`（暧昧）或 `trust`（非暧昧）。
+
+### `POST /api/summarize`
+
+```json
+{ "text": "那一大段话…", "scene": "friend" }
+```
+
+返回：`subject` `core` `points[]` `meaning` `advice` `missing`。
+
+### `POST /api/ask`
+
+```json
+{
+  "question": "今天适合把话说开吗？",
+  "focus": "partner",
+  "birth": { "date": "2006-03-28", "hour": 10, "minute": 25, "place": "太原", "gender": "female" },
+  "partnerBirth": { "date": "2005-10-19", "hour": 12, "minute": 30, "place": "太原", "gender": "male" }
+}
+```
+
+返回：`answer` `basis[]` `caution`，填了生辰时附 `chart` / `partnerChart` / `synastry`。
+
+### `GET /api/almanac?date=YYYY-MM-DD`
+
+返回当天（或指定日期）黄历：宜忌、冲煞、五行、吉位、日值、生活建议。
+
+### `GET /api/health`
+
+```json
+{ "ok": true, "build": "…", "time": "…", "model": "configured | public-fallback", "version": "1.0.0" }
+```
+
+限流：`analyze` 20 次 / 5 分钟 / IP，`summarize` 20 次，`ask` 30 次；超限返回 `429` + `Retry-After`。
+多实例部署时把 `lib/rateLimit.ts` 换成 Redis 实现即可。
+
+---
+
+## 环境变量
+
+| 变量 | 必填 | 说明 |
+|---|---|---|
+| `OPENAI_API_KEY` | 建议 | OpenAI 兼容接口的 Key；不填会退回公共模型（有限流，不稳定） |
+| `OPENAI_BASE_URL` | 否 | 默认 `https://api.openai.com/v1`，支持任何兼容 `/chat/completions` 的服务 |
+| `OPENAI_MODEL` | 否 | 默认 `gpt-4o-mini` |
+| `PUBLIC_MODEL_URL` | 否 | 公共兜底模型地址，默认 `https://text.pollinations.ai/openai` |
+| `PUBLIC_MODEL_NAME` | 否 | 公共兜底模型名，默认 `openai` |
+
+```bash
+cp .env.example .env
+# 填 OPENAI_API_KEY
+```
+
+> 公共兜底会把内容发到第三方，正式使用请务必配置自己的 Key。
+
+---
 
 ## 本地运行
+
 ```bash
 npm install
-cp .env.example .env
-# 填入 OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL
-npm run dev
+cp .env.example .env      # 填 OPENAI_API_KEY
+npm run dev               # http://localhost:3000
 ```
 
-> 没有配置模型 Key 时，会优先使用公共模型服务；公共模型有频率限制，失败时才回退到本地规则解析。
+生产构建：
 
-公共模型服务会把输入内容发送到第三方，请不要输入身份证、住址等敏感信息。正式使用时建议配置自己的 `OPENAI_API_KEY`。
+```bash
+npm run build
+npm start
+```
+
+质量检查：
+
+```bash
+npm run typecheck   # 类型检查
+npm run check       # 类型检查 + 生产构建
+```
+
+CI 在 `.github/workflows/ci.yml`：每次 push 跑 `npm ci → typecheck → build`。
+
+---
+
+## 桌面小组件（macOS）
+
+```bash
+npm install
+npm run build                 # 先构建网页，桌面端启动更快
+zsh desktop-widget/build-app.sh
+open "desktop-widget/句读JUDOU.app"
+```
+
+或者双击 `启动句读JUDOU.command`（会自动装依赖、构建、生成 app）。
+
+启动逻辑：
+
+- 检查 `127.0.0.1:3211`、`4321` 上有没有可用的句读服务，并核对构建号，避免连到旧版本
+- 都不通时自己在空闲端口拉起 `next start`；端口被占用会自动换下一个
+- 同时只允许一个桌面实例，重复双击会把已有窗口调到前面
+- 退出时结束自己拉起的服务，并用 PID 文件兜住上次异常退出留下的进程
+
+运行时副本：macOS 会把「文稿」目录挡在隐私权限后面，后台子进程读不了。所以 `build-app.sh` 会把运行时同步到
+`~/Library/Application Support/Judou/runtime`，桌面端只跑这份副本。改了代码后重新执行一次 `build-app.sh` 即可同步。
+
+### 打不开怎么办
+
+1. 点页面上的「重新连接」
+2. 确认装了 Node.js：`node -v`
+3. 看日志：`/tmp/judou-widget-4321.log`
+4. 仍不行：系统设置 → 隐私与安全性 → 完全磁盘访问权限 → 添加「句读JUDOU」，然后重开
+
+---
+
+## 排盘说明
+
+- 排盘必须有**出生年月日 + 出生时间（精确到分）+ 出生城市**；少一样都不算
+- 引擎是 `lunar-javascript`（寿星天文历同源算法），本机计算：不联网、不需要 API Key、结果可复现
+- 真太阳时 = 北京时间 + (经度 − 120) × 4 分钟 + 均时差；成都这类偏西城市能差一小时以上
+- 合盘只看两边日主五行生克和互补，用来解释相处方式，**不预测「能不能在一起」**
+- 所有命盘内容只作民俗参考，不构成任何决策依据
+
+---
 
 ## 部署
-推送到 GitHub，Vercel 导入仓库，配置环境变量即可。
+
+**Vercel（推荐）**
+
+1. 推到 GitHub
+2. Vercel 导入仓库
+3. 配置 `OPENAI_API_KEY`（建议同时配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）
+4. 部署
+
+**自建**
+
+```bash
+npm ci && npm run build
+OPENAI_API_KEY=sk-... npm start   # 默认 3000 端口
+```
+
+反向代理到 3000 端口即可；`/api/health` 可以直接接健康检查。
+
+---
 
 ## Roadmap
-- V1：Web 工具（当前）
-- V2：浏览器插件（选中网页文字右键解读）
-- V3：个性化语气学习
+
+- [x] 消息解读 + 指导方向
+- [x] 长文提取核心
+- [x] 桌面黄历小组件
+- [x] 真太阳时排盘 + 合盘
+- [ ] 账号体系与云端同步（目前全部是本机 localStorage）
+- [ ] 浏览器插件：选中网页文字右键解读
+- [ ] 多语言
 
 ## License
+
 MIT

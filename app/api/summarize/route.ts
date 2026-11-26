@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { clientKey, rateLimit } from "@/lib/rateLimit";
+
 import { isScene } from "@/lib/scenes";
 import { buildSummaryDemo } from "@/lib/summarizeDemo";
 import {
@@ -127,6 +129,17 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
 }
 
 export async function POST(request: Request) {
+  const limitResult = rateLimit(clientKey(request, "summarize"), 20);
+  if (!limitResult.ok) {
+    return NextResponse.json(
+      { error: "太频繁了，休息一下再试。" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limitResult.retryAfter) },
+      },
+    );
+  }
+
   let body: unknown;
 
   try {
