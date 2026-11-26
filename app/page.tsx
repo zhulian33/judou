@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrandMark, SparkIcon } from "@/components/Icons";
 import { ContactManager } from "@/components/ContactManager";
 import { MessageInput } from "@/components/MessageInput";
-import { OpenerResultCard } from "@/components/OpenerResultCard";
+import { AskPanel } from "@/components/AskPanel";
 import { ReadingDetails } from "@/components/ReadingDetails";
 import { GuidanceCard } from "@/components/GuidanceCard";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -25,7 +25,6 @@ import type {
   ApiErrorBody,
   ExampleMessage,
   Gender,
-  OpenerResult,
   Scene,
   SummaryResult,
 } from "@/lib/types";
@@ -37,14 +36,13 @@ function isApiError(
 }
 
 export default function Home() {
-  const [mode, setMode] = useState<"reply" | "opener">("reply");
+  const [mode, setMode] = useState<"reply" | "ask">("reply");
   const [scene, setScene] = useState<Scene>("flirt");
   const [message, setMessage] = useState("");
   const [myWords, setMyWords] = useState("");
   const [context, setContext] = useState("");
   const [gender, setGender] = useState<Gender>("unknown");
   const [result, setResult] = useState<AnalyzeResult | null>(null);
-  const [openerResult, setOpenerResult] = useState<OpenerResult | null>(null);
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([]);
   const [summary, setSummary] = useState<SummaryResult | null>(null);
   const [summarizing, setSummarizing] = useState(false);
@@ -68,12 +66,11 @@ export default function Home() {
     selectContact,
   } = useContacts();
 
-  function handleModeChange(nextMode: "reply" | "opener") {
+  function handleModeChange(nextMode: "reply" | "ask") {
     setMode(nextMode);
     setMessage("");
     setMyWords("");
     setResult(null);
-    setOpenerResult(null);
     setError(null);
   }
 
@@ -96,7 +93,6 @@ export default function Home() {
     setGender(activeContact.gender);
     setContext(activeContact.notes);
     setResult(null);
-    setOpenerResult(null);
     setError(null);
   }, [activeContact, hydrated]);
 
@@ -197,7 +193,6 @@ export default function Home() {
     setGender(draft.gender);
     setContext(draft.notes);
     setResult(null);
-    setOpenerResult(null);
     setError(null);
   }
 
@@ -210,8 +205,7 @@ export default function Home() {
       setGender("unknown");
       setContext("");
       setResult(null);
-      setOpenerResult(null);
-      setError(null);
+        setError(null);
       return;
     }
 
@@ -242,7 +236,6 @@ export default function Home() {
     setGender("unknown");
     setContext("");
     setResult(null);
-    setOpenerResult(null);
   }
 
   function handlePickExample(example: ExampleMessage) {
@@ -251,7 +244,6 @@ export default function Home() {
     setMyWords("");
     setContext(example.context ?? "");
     setResult(null);
-    setOpenerResult(null);
     setError(null);
 
     window.setTimeout(() => {
@@ -263,59 +255,17 @@ export default function Home() {
 
   async function handleAnalyze() {
     if (!message.trim()) {
-      setError(
-        mode === "opener"
-          ? "先说说你为什么想找对方。"
-          : "先把那条让你卡住的消息贴进来。",
-      );
+      setError("先把那条让你卡住的消息贴进来。");
       return;
     }
 
     setLoading(true);
     setError(null);
     setResult(null);
-    setOpenerResult(null);
     setModelSource(null);
 
     try {
-      if (mode === "opener") {
-        const response = await fetch("/api/opener", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            idea: message,
-            scene,
-            context: context.trim() || undefined,
-            memory: memoryEntries.length
-              ? formatMemory(memoryEntries)
-              : undefined,
-            gender,
-            contactName: activeContact?.name.trim() || undefined,
-          }),
-        });
-        const payload = (await response.json()) as
-          | OpenerResult
-          | ApiErrorBody;
-
-        if (!response.ok || "error" in payload) {
-          throw new Error(
-            "error" in payload ? payload.error : "这次没有想出开场。",
-          );
-        }
-
-        setOpenerResult(payload);
-        remember(
-          "opener",
-          `想开口：${message.slice(0, 42)}；建议：${payload.options[0]?.content.slice(0, 42) ?? ""}`,
-        );
-        const source = response.headers.get("X-Judou-Source");
-        setModelSource(
-          source === "configured" || source === "public" || source === "local"
-            ? source
-            : null,
-        );
-      } else {
-        const response = await fetch("/api/analyze", {
+      const response = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -354,7 +304,6 @@ export default function Home() {
             ? source
             : null,
         );
-      }
 
       window.setTimeout(() => {
         resultRef.current?.scrollIntoView({
@@ -414,11 +363,11 @@ export default function Home() {
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
         <section className="relative px-0 pb-2 pt-9 text-center lg:col-start-1 lg:row-start-1 lg:px-2 lg:pb-8 lg:pt-12 lg:text-left">
           <h1 className="text-balance mx-auto mt-2 max-w-[620px] font-serif text-[34px] font-semibold leading-[1.25] tracking-[-0.035em] text-ink-950 min-[370px]:text-[38px] sm:text-[52px] sm:leading-[1.2] lg:mx-0 lg:text-[58px]">
-            {mode === "opener" ? (
+            {mode === "ask" ? (
               <>
-                想找对方，
+                今天这一步，
                 <br />
-                又不知道怎么开口？
+                先问一句再走。
               </>
             ) : (
               <>
@@ -444,7 +393,7 @@ export default function Home() {
                   句读工作台
                 </p>
                 <p className="mt-0.5 text-[11px] text-ink-600/75">
-                  {mode === "opener" ? "先找理由，再想开口" : "先拆意思，再想回法"}
+                  {mode === "ask" ? "先看日子，再决定说不说" : "先拆意思，再想回法"}
                 </p>
               </div>
             </div>
@@ -456,7 +405,7 @@ export default function Home() {
           <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-cream-100 p-1">
             {[
               { value: "reply" as const, label: "回消息" },
-              { value: "opener" as const, label: "主动开口" },
+              { value: "ask" as const, label: "先知" },
             ].map((item) => (
               <button
                 key={item.value}
@@ -473,6 +422,10 @@ export default function Home() {
             ))}
           </div>
 
+          {mode === "ask" ? (
+            <AskPanel scene={scene} />
+          ) : (
+          <>
           <ContactManager
             contacts={contacts}
             activeId={activeId}
@@ -513,6 +466,8 @@ export default function Home() {
             onAnalyze={handleAnalyze}
             onPickExample={handlePickExample}
           />
+          </>
+          )}
         </section>
 
         <div className="lg:col-start-1 lg:row-start-2">
@@ -527,12 +482,10 @@ export default function Home() {
             </span>
             <div>
               <p className="text-sm font-semibold text-ink-800">
-                {mode === "opener" ? "正在想一个不尴尬的开场" : "正在拆这句话"}
+                正在拆这句话
               </p>
               <p className="mt-0.5 text-[11px] text-ink-400">
-                {mode === "opener"
-                  ? "先想清楚来意，再把话说自然"
-                  : "先看内心 OS，再猜下一句"}
+                先看内心 OS，再猜下一句
               </p>
             </div>
           </div>
@@ -543,9 +496,7 @@ export default function Home() {
           className="scroll-mt-5 space-y-9 pt-9 empty:hidden sm:space-y-11 lg:pt-0"
         >
           {summary ? <SummaryCard result={summary} /> : null}
-          {openerResult ? (
-            <OpenerResultCard result={openerResult} />
-          ) : result ? (
+          {result ? (
             <>
               <ThoughtBubble result={result} />
               <GuidanceCard result={result} />

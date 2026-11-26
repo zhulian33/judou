@@ -3,12 +3,14 @@ import { NextResponse } from "next/server";
 import { buildDemoResult } from "@/lib/demo";
 import { buildPrompt, SYSTEM_PROMPT } from "@/lib/prompt";
 import { buildGuidance } from "@/lib/guidance";
+import { guessSubject, SUBJECT_LABEL } from "@/lib/subject";
 import { checkContentSafety } from "@/lib/safety";
 import { isScene } from "@/lib/scenes";
 import type {
   AffectionInsight,
   AnalyzeRequest,
   GuidanceInsight,
+  SubjectInsight,
   AnalyzeResult,
   ApiErrorBody,
   Gender,
@@ -500,10 +502,28 @@ function normalizeGuidance(
   };
 }
 
+function normalizeSubject(
+  value: unknown,
+  fallback: SubjectInsight,
+): SubjectInsight {
+  if (!isRecord(value)) {
+    return fallback;
+  }
+
+  const who = readString(value.who);
+  if (who !== "me" && who !== "self" && who !== "third") {
+    return fallback;
+  }
+
+  const label = readString(value.label) || SUBJECT_LABEL[who];
+  return { who, label };
+}
+
 function normalizeResult(
   value: unknown,
   scene: AnalyzeRequest["scene"],
   hasMyWords: boolean,
+  message: string,
 ): AnalyzeResult | null {
   if (!isRecord(value) || !Array.isArray(value.replies)) {
     return null;
@@ -588,6 +608,7 @@ function normalizeResult(
     value.guidance,
     buildGuidance(scene, { subtext, emotion, intent, risk }),
   );
+  const subject = normalizeSubject(value.subject, guessSubject(message));
 
   return {
     subtext,
@@ -605,6 +626,7 @@ function normalizeResult(
     ...(affection ? { affection } : {}),
     ...(trust ? { trust } : {}),
     guidance,
+    subject,
     replies: [gentle, humor, deadpan, straight],
   };
 }
@@ -657,6 +679,7 @@ export async function POST(request: Request) {
         parseJsonObject(lastOutput),
         analyzeRequest.scene,
         Boolean(analyzeRequest.myWords),
+        analyzeRequest.message,
       );
 
       if (result) {

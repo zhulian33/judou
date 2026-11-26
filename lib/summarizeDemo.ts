@@ -34,7 +34,14 @@ export function buildSummaryDemo(req: SummaryRequest): SummaryResult {
     .slice(0, 4)
     .map((item) => (item.length > 24 ? `${item.slice(0, 22)}…` : item));
 
+  const subject = /朋友|同事|领导|家人|室友|同学/.test(text)
+    ? "在说别人"
+    : /你|咱|我们/.test(text)
+      ? "在说你自己"
+      : "在说 TA 自己";
+
   return {
+    subject,
     core,
     points: points.length > 0 ? points : ["原文比较短，直接看原话更快。"],
     meaning:

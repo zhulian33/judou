@@ -179,7 +179,13 @@ export async function POST(request: Request) {
     ...base,
     ...(chart
       ? {
-          chart: `${chart.pillars} · 日主${chart.dayMaster}`,
+          chart: {
+            pillars: chart.pillars,
+            dayMaster: chart.dayMaster,
+            dayMasterElement: chart.dayMasterElement,
+            lines: chart.lines,
+            wuXing: chart.wuXing,
+          },
           basis: [...base.basis.slice(0, 2), `命盘：${chart.pillars}`],
         }
       : {}),

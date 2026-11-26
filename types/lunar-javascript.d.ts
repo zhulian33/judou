@@ -31,7 +31,19 @@ declare module "lunar-javascript" {
     getTime(): string;
     getDayGan(): string;
     getDayZhi(): string;
+    getYearNaYin(): string;
+    getMonthNaYin(): string;
     getDayNaYin(): string;
+    getTimeNaYin(): string;
+    getYearShiShenGan(): string;
+    getMonthShiShenGan(): string;
+    getTimeShiShenGan(): string;
+    getYearDiShi(): string;
+    getMonthDiShi(): string;
+    getDayDiShi(): string;
+    getTimeDiShi(): string;
+    getTaiYuan(): string;
+    getMingGong(): string;
   }
 
   interface LunarDay {

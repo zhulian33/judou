@@ -97,6 +97,7 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
       return null;
     }
 
+    const subject = readString(parsed.subject);
     const core = readString(parsed.core);
     const meaning = readString(parsed.meaning);
     const advice = readString(parsed.advice);
@@ -108,7 +109,13 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
       return null;
     }
 
-    return { core, points, meaning, advice };
+    return {
+      ...(subject ? { subject } : {}),
+      core,
+      points,
+      meaning,
+      advice,
+    };
   } catch (error) {
     console.error("[句读] summarize failed:", error);
     return null;

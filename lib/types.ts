@@ -44,6 +44,13 @@ export interface ReadingHypothesis {
   likelihood: Confidence;
 }
 
+export interface SubjectInsight {
+  /** me = 在说你；self = 在说 TA 自己；third = 在说第三方 */
+  who: "me" | "self" | "third";
+  /** 人话标签，如「TA 在说别人」 */
+  label: string;
+}
+
 export interface GuidanceInsight {
   read: string;
   direction: string;
@@ -95,6 +102,7 @@ export interface AnalyzeResult {
   affection?: AffectionInsight;
   trust?: AffectionInsight;
   guidance?: GuidanceInsight;
+  subject?: SubjectInsight;
   replies: ReplyOption[];
 }
 
@@ -130,12 +138,20 @@ export interface AskRequest {
   birth?: BirthInfo;
 }
 
+export interface AskChart {
+  pillars: string;
+  dayMaster: string;
+  dayMasterElement: string;
+  lines: string[];
+  wuXing: Array<{ element: string; count: number }>;
+}
+
 export interface AskResult {
   answer: string;
   basis: string[];
   caution: string;
-  /** 有生辰时返回四柱，方便界面显示 */
-  chart?: string;
+  /** 有生辰时返回命盘，方便界面显示 */
+  chart?: AskChart;
 }
 
 export interface SummaryRequest {
@@ -144,6 +160,8 @@ export interface SummaryRequest {
 }
 
 export interface SummaryResult {
+  /** 这段话在说谁 */
+  subject?: string;
   /** 一句话核心，30 字内 */
   core: string;
   /** 2-4 条关键信息 */

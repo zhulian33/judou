@@ -1,5 +1,6 @@
 import { getFewShot } from "@/lib/fewshots";
 import { buildGuidance } from "@/lib/guidance";
+import { guessSubject } from "@/lib/subject";
 import { DEMO_PATTERNS, detectDemoPattern } from "@/lib/demoPatterns";
 import type {
   AnalyzeRequest,
@@ -121,7 +122,11 @@ export function buildDemoResult(req: AnalyzeRequest): AnalyzeResult {
             "先把感受说清楚，再提一个具体期待，会比解释一堆更容易被听懂。",
         }
       : undefined,
-    guidance: buildGuidance(req.scene, merged),
+    guidance: {
+      ...buildGuidance(req.scene, merged),
+      ...(patternData?.guidance ?? {}),
+    },
+    subject: guessSubject(req.message),
     replies,
   };
 }

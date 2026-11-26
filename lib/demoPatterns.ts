@@ -6,6 +6,8 @@ import type {
 } from "@/lib/types";
 
 export type DemoPattern =
+  | "sharing"
+  | "venting"
   | "cutoff"
   | "delay"
   | "withdrawal"
@@ -18,6 +20,7 @@ export type DemoPattern =
 
 export interface DemoPatternData {
   subtext: string;
+  guidance?: { direction: string; keep: string[] };
   emotion: string;
   intent: string;
   thoughts: string;
@@ -31,6 +34,68 @@ export interface DemoPatternData {
 }
 
 export const DEMO_PATTERNS: Record<Exclude<DemoPattern, "generic">, DemoPatternData> = {
+  sharing: {
+    subtext: "TA 在跟你讲别人的事，重点是想有人听，不是在说你们俩。",
+    guidance: {
+      direction:
+        "先顺着 TA 的情绪接一句，再问一个细节让 TA 说下去。别急着评价那个人，也别把话题拐回你们的关系。",
+      keep: ["先听，不急着站队", "只问细节，不做评判"],
+    },
+    emotion: "情绪还不小，说的时候带着点代入。",
+    intent: "想找人说说这件事，顺便确认自己的判断。",
+    thoughts: "这事憋着难受，先跟 TA 讲讲，看 TA 怎么想。",
+    nextLine: {
+      content: "你说她是不是也有点过分？",
+      confidence: "medium",
+      reason: "TA 讲完细节后，通常会把判断权递给你，等一个回应。",
+    },
+    readings: [
+      { title: "想被听见", explanation: "重点是把情绪说出来，不一定需要建议。", likelihood: "high" },
+      { title: "求认同", explanation: "想确认自己的判断是不是站得住。", likelihood: "medium" },
+      { title: "单纯分享", explanation: "只是刚好有话想说，没有别的意图。", likelihood: "low" },
+    ],
+    missingInfo: "看 TA 说完后是等你评价，还是自己就把话收住了。",
+    replies: [
+      { style: "gentle", label: "接住", content: "听起来你也被折腾得挺累的，先说说后来呢？" },
+      { style: "humor", label: "轻一点", content: "这剧情有点上头，你接着说，我听着。" },
+      { style: "deadpan", label: "冷一句", content: "行，这事确实够呛。然后呢？" },
+      { style: "straight", label: "问清楚", content: "你现在是想吐槽一下，还是想让我一起想办法？" },
+    ],
+    score: 55,
+    trend: "steady",
+    note: "这时候接住情绪比给建议有用，别急着评价第三方。",
+  },
+  venting: {
+    subtext: "TA 在倒自己的苦水，想被理解，不是想被教育。",
+    guidance: {
+      direction:
+        "先接一句情绪，别急着分析谁对谁错，也别马上给方案。等 TA 把话说完，再问一句「你想让我一起想办法，还是先听你说」。",
+      keep: ["先接情绪，后给建议", "不评价 TA 的处境"],
+    },
+    emotion: "累、烦躁，情绪是往外倒的。",
+    intent: "把这一天的憋屈说出来，找个人站在 TA 这边。",
+    thoughts: "今天真的够了，先找个人说两句，不然憋得难受。",
+    nextLine: {
+      content: "算了，说出来好受点。",
+      confidence: "medium",
+      reason: "TA 说完之后多半会自己收一下，不会真的要求你解决。",
+    },
+    readings: [
+      { title: "想被理解", explanation: "重点在情绪，不在事情本身。", likelihood: "high" },
+      { title: "想找办法", explanation: "吐槽完可能会问你怎么处理。", likelihood: "medium" },
+      { title: "只是想说说", explanation: "说完就过去了，不需要回应太多。", likelihood: "low" },
+    ],
+    missingInfo: "看 TA 说完是停下来，还是继续追问你的看法。",
+    replies: [
+      { style: "gentle", label: "接住", content: "今天这是真憋屈，换我也受不了。" },
+      { style: "humor", label: "轻一点", content: "这破事确实该骂，你先骂，我垫后。" },
+      { style: "deadpan", label: "冷一句", content: "行，今天这口气先记着。" },
+      { style: "straight", label: "问一句", content: "你想让我听着，还是一起想想怎么办？" },
+    ],
+    score: 58,
+    trend: "steady",
+    note: "先站 TA 这边，别急着讲道理。",
+  },
   cutoff: {
     subtext: "TA 不想再聊了，这句话是在收场。",
     emotion: "收着、有点烦，也不想再解释。",
@@ -242,6 +307,12 @@ export const DEMO_PATTERNS: Record<Exclude<DemoPattern, "generic">, DemoPatternD
 };
 
 export function detectDemoPattern(message: string): DemoPattern {
+  if (/我(?:的)?(?:朋友|同事|闺蜜|兄弟|姐妹|室友|同学|对象|前任)/.test(message)) {
+    return "sharing";
+  }
+  if (/被骂|好累|加班|烦死|委屈|撑不住|扛不住|崩溃/.test(message)) {
+    return "venting";
+  }
   if (/别聊了|不聊了|别说了|不说了|到此为止|没什么好说的/.test(message)) {
     return "cutoff";
   }
@@ -251,7 +322,7 @@ export function detectDemoPattern(message: string): DemoPattern {
   if (/别人家|看看你|争气|对比|比较/.test(message)) {
     return "comparison";
   }
-  if (/今天|明天|汇报|截止|尽快|需求|交付|上线/.test(message)) {
+  if (/汇报|截止|尽快|交付|上线|工单|排期|需求变更/.test(message)) {
     return "urgency";
   }
   if (/没事|算了|你忙|自己去|不用|随便|呵呵/.test(message)) {

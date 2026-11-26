@@ -27,6 +27,12 @@ export function ThoughtBubble({ result }: ThoughtBubbleProps) {
             对方内心大概在想
           </h2>
         </div>
+        <div className="flex flex-col items-end gap-1">
+          {result.subject ? (
+            <span className="rounded-full bg-ink-950 px-2.5 py-1 text-[9px] text-cream-50">
+              {result.subject.label}
+            </span>
+          ) : null}
         {result.particles.length > 0 ? (
           <div className="flex flex-wrap justify-end gap-1">
             {result.particles.map((particle) => (
@@ -39,6 +45,7 @@ export function ThoughtBubble({ result }: ThoughtBubbleProps) {
             ))}
           </div>
         ) : null}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-ink-950/10 bg-white shadow-soft">
