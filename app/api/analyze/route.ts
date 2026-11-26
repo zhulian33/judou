@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { buildDemoResult } from "@/lib/demo";
 import { buildPrompt, SYSTEM_PROMPT } from "@/lib/prompt";
+import { buildGuidance } from "@/lib/guidance";
 import { checkContentSafety } from "@/lib/safety";
 import { isScene } from "@/lib/scenes";
 import type {
@@ -499,47 +500,6 @@ function normalizeGuidance(
   };
 }
 
-/// 模型没给 guidance 时，用它的分析结果 + 场景提示拼方向，尽量不写成套话。
-const SCENE_HINT: Record<AnalyzeRequest["scene"], { move: string; keep: string[] }> = {
-  flirt: {
-    move: "给彼此留点余地，别把话说死，也别一次把情绪全倒出来。",
-    keep: ["先接住情绪，再表达自己", "让 TA 有台阶，也让自己有退路"],
-  },
-  work: {
-    move: "先把结论和时间点说清楚，再解释原因，别在语气上纠缠。",
-    keep: ["先给结论再解释", "把该谁做、什么时候做完说清楚"],
-  },
-  family: {
-    move: "先接情绪，等对方缓下来再谈这一件事，别翻旧账。",
-    keep: ["先接情绪，后谈事情", "只说这一件事"],
-  },
-  service: {
-    move: "先把能不能办、多久办完说清楚，别过度承诺。",
-    keep: ["先给可执行的答复", "做不到的部分要提前说"],
-  },
-  friend: {
-    move: "把感受直接说出来，别绕，也别让对方猜。",
-    keep: ["说感受，不判断人", "一次只聊一件事"],
-  },
-};
-
-function fallbackGuidance(
-  scene: AnalyzeRequest["scene"],
-  result: { subtext: string; emotion: string; intent: string; risk: string },
-): GuidanceInsight {
-  const hint = SCENE_HINT[scene] ?? SCENE_HINT.friend;
-  const direction = result.intent
-    ? `TA 这次的落点是：${result.intent} 顺着这一点回应就够了，不用把别的话题一起翻出来。${hint.move}`
-    : hint.move;
-
-  return {
-    read: `${result.subtext}${result.emotion ? `（${result.emotion}）` : ""}`,
-    direction,
-    keep: hint.keep,
-    avoid: result.risk,
-  };
-}
-
 function normalizeResult(
   value: unknown,
   scene: AnalyzeRequest["scene"],
@@ -626,7 +586,7 @@ function normalizeResult(
 
   const guidance = normalizeGuidance(
     value.guidance,
-    fallbackGuidance(scene, { subtext, emotion, intent, risk }),
+    buildGuidance(scene, { subtext, emotion, intent, risk }),
   );
 
   return {

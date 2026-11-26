@@ -1,0 +1,166 @@
+import { NextResponse } from "next/server";
+
+import { isValidDateString } from "@/lib/almanac";
+import { buildAskDemo } from "@/lib/askDemo";
+import { ASK_SYSTEM_PROMPT, buildAskPrompt } from "@/lib/askPrompt";
+import { isScene } from "@/lib/scenes";
+import type { AskRequest, AskResult, Scene } from "@/lib/types";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+const MODEL_TIMEOUT_MS = 45_000;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function getConfiguredKey(): string | undefined {
+  const key = process.env.OPENAI_API_KEY?.trim();
+  return key && key !== "your_key_here" ? key : undefined;
+}
+
+function getEndpoint(): string {
+  const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1")
+    .trim()
+    .replace(/\/+$/, "");
+  return base.endsWith("/chat/completions") ? base : `${base}/chat/completions`;
+}
+
+function getPublicEndpoint(): string {
+  return (
+    process.env.PUBLIC_MODEL_URL?.trim() ||
+    "https://text.pollinations.ai/openai"
+  );
+}
+
+async function askModel(request: AskRequest): Promise<AskResult | null> {
+  const key = getConfiguredKey();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(key ? getEndpoint() : getPublicEndpoint(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+      },
+      body: JSON.stringify({
+        model: key
+          ? process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini"
+          : process.env.PUBLIC_MODEL_NAME?.trim() || "openai",
+        messages: [
+          { role: "system", content: ASK_SYSTEM_PROMPT },
+          { role: "user", content: buildAskPrompt(request) },
+        ],
+        temperature: 0.8,
+        max_tokens: 600,
+      }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as unknown;
+    if (!isRecord(payload) || !Array.isArray(payload.choices)) {
+      return null;
+    }
+
+    const first = payload.choices[0];
+    if (!isRecord(first) || !isRecord(first.message)) {
+      return null;
+    }
+
+    const content = readString(first.message.content)
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```$/, "")
+      .trim();
+    const start = content.indexOf("{");
+    const end = content.lastIndexOf("}");
+    if (start < 0 || end <= start) {
+      return null;
+    }
+
+    const parsed = JSON.parse(content.slice(start, end + 1)) as unknown;
+    if (!isRecord(parsed)) {
+      return null;
+    }
+
+    const answer = readString(parsed.answer);
+    const caution = readString(parsed.caution);
+    const basis = Array.isArray(parsed.basis)
+      ? parsed.basis.map((item) => readString(item)).filter(Boolean).slice(0, 3)
+      : [];
+
+    if (!answer || basis.length === 0) {
+      return null;
+    }
+
+    return { answer, basis, caution: caution || "黄历只作参考，别拿它替你做决定。" };
+  } catch (error) {
+    console.error("[句读] ask model failed:", error);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function POST(request: Request) {
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "请求内容不是合法的 JSON。" }, { status: 400 });
+  }
+
+  if (!isRecord(body)) {
+    return NextResponse.json({ error: "请求格式不正确。" }, { status: 400 });
+  }
+
+  const question = readString(body.question);
+  const scene = readString(body.scene);
+  const date = readString(body.date);
+
+  if (!question) {
+    return NextResponse.json({ error: "先写一句你想问的。" }, { status: 400 });
+  }
+  if (question.length > 300) {
+    return NextResponse.json(
+      { error: "问题别太长，300 字以内。" },
+      { status: 400 },
+    );
+  }
+  if (date && !isValidDateString(date)) {
+    return NextResponse.json(
+      { error: "日期格式不正确，请使用 YYYY-MM-DD。" },
+      { status: 400 },
+    );
+  }
+
+  const payload: AskRequest = {
+    question,
+    ...(scene && isScene(scene) ? { scene: scene as Scene } : {}),
+    ...(date ? { date } : {}),
+  };
+
+  const modeled = await askModel(payload);
+  const result = modeled ?? buildAskDemo(payload);
+
+  return NextResponse.json(result, {
+    headers: {
+      "Cache-Control": "no-store",
+      "X-Judou-Source": modeled ? "model" : "local",
+    },
+  });
+}
+

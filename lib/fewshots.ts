@@ -13,6 +13,86 @@ export const FEW_SHOT_EXAMPLES: FewShotExample[] = [
   {
     scene: "flirt",
     sceneLabel: "暧昧",
+    message: "我们还是别聊了。",
+    context: "前面聊了半小时，你连着问了三遍对方在干嘛。",
+    result: {
+      subtext: "TA 已经不耐烦了，想把这场对话关掉。",
+      emotion: "语气是收口的，带着点累和距离感。",
+      intent: "结束现在这段对话，不想再被追问。",
+      risk: "这时候再解释、再追问、再发长段，只会让 TA 更想退开。",
+      thoughts: "又来一条。算了，先停吧，我现在真不想回。",
+      particles: [],
+      analysisConfidence: "high",
+      readings: [
+        {
+          title: "嫌烦了",
+          explanation: "连着被追问，TA 的情绪已经到顶，只想先停下来。",
+          likelihood: "high",
+        },
+        {
+          title: "在降温",
+          explanation: "不是彻底翻脸，但想用「别聊了」把距离重新拉开一点。",
+          likelihood: "medium",
+        },
+        {
+          title: "暂时没力气",
+          explanation: "TA 这会儿状态不好，不想解释，也不想被安慰。",
+          likelihood: "low",
+        },
+      ],
+      missingInfo: "看 TA 之后会不会自己回来找你。会回来，是情绪；一直不回，是真的想退。",
+      nextLine: {
+        content: "先这样吧。",
+        confidence: "medium",
+        reason: "TA 会用一个更短的句子把话题彻底收掉，而不是再解释原因。",
+      },
+      guidance: {
+        read: "TA 现在是在收场，不是欲擒故纵。情绪已经过头了。",
+        direction:
+          "这一轮先停手。别解释、别追问、别发长段，隔一天再按一件具体的小事重新开口；TA 愿意接就接，不接就别再连发。",
+        keep: ["先停下，不再追问", "只发一条，不补第二条"],
+        avoid: "现在追问「我怎么了」，等于把 TA 的耐心再压一次。",
+      },
+      affection: {
+        score: 32,
+        trend: "cooling",
+        note: "热度在掉。现在唯一能加分的动作是给空间，不是解释。",
+      },
+      replies: [
+        {
+          style: "gentle",
+          label: "收住",
+          content: "行，那先不聊了。你忙你的，我不打扰。",
+          whyItWorks: "顺着 TA 的决定收住，不再加压。",
+          affectionBonus: 8,
+        },
+        {
+          style: "humor",
+          label: "轻收",
+          content: "收到，我先退场。下次想聊了喊我。",
+          whyItWorks: "把结束说得轻松一点，不追问，也不卑微。",
+          affectionBonus: 6,
+        },
+        {
+          style: "deadpan",
+          label: "冷收",
+          content: "好。那就到这。",
+          whyItWorks: "短，态度清楚，不拉扯。",
+          affectionBonus: 4,
+        },
+        {
+          style: "straight",
+          label: "留一句",
+          content: "好，我不追问。等你愿意说的时候再说。",
+          whyItWorks: "表明边界，也把主动权交回去。",
+          affectionBonus: 7,
+        },
+      ],
+    },
+  },
+  {
+    scene: "flirt",
+    sceneLabel: "暧昧",
     message: "我最近有点忙，晚点再说吧。",
     myWords: "我想说我没生气，但希望对方别一直用忙来敷衍。",
     context: "连续聊了两周，昨天还约了周末见面。",

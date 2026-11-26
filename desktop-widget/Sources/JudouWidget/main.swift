@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
   private var isAutoResizing = false
   /// 记录自己拉起的服务进程，退出或异常结束后下次启动能清理掉。
   private let pidFile = "/tmp/judou-widget-server.pid"
+  /// 自己拉起的服务意外退出时，最多自动重启一次。
+  private var restartCount = 0
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // 只允许一个句读实例，避免重复启动本地服务互相抢端口。
@@ -244,6 +246,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
       "-lc",
       "cd \(shellQuote(root)) && export PATH=\"$PATH:/opt/homebrew/bin:/usr/local/bin\" && if [ -f .next/BUILD_ID ]; then exec node node_modules/next/dist/bin/next start -p \(port); else exec node node_modules/next/dist/bin/next dev -p \(port); fi > /tmp/judou-widget-\(port).log 2>&1"
     ]
+    process.terminationHandler = { [weak self] finished in
+      DispatchQueue.main.async {
+        guard let self, self.ownsServer, self.restartCount < 1 else { return }
+        self.restartCount += 1
+        self.isConnecting = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+          self.startOwnServer()
+        }
+      }
+    }
     try? process.run()
     serverProcess = process
     try? "\(process.processIdentifier)".write(

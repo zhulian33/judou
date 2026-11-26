@@ -1,4 +1,5 @@
 import { getFewShot } from "@/lib/fewshots";
+import { buildGuidance } from "@/lib/guidance";
 import { DEMO_PATTERNS, detectDemoPattern } from "@/lib/demoPatterns";
 import type {
   AnalyzeRequest,
@@ -66,16 +67,23 @@ export function buildDemoResult(req: AnalyzeRequest): AnalyzeResult {
     };
   });
 
-  return {
-    ...base,
+  const merged = {
     subtext:
       patternData
         ? patternData.subtext
         : req.message.trim() === example.message
-        ? base.subtext
-        : SCENE_SUBTEXTS[req.scene],
+          ? base.subtext
+          : SCENE_SUBTEXTS[req.scene],
     emotion: patternData?.emotion ?? base.emotion,
     intent: patternData?.intent ?? base.intent,
+    risk: base.risk,
+  };
+
+  return {
+    ...base,
+    subtext: merged.subtext,
+    emotion: merged.emotion,
+    intent: merged.intent,
     thoughts: patternData?.thoughts ?? base.thoughts,
     particles: extractParticles(req.message),
     analysisConfidence: patternData
@@ -113,6 +121,7 @@ export function buildDemoResult(req: AnalyzeRequest): AnalyzeResult {
             "先把感受说清楚，再提一个具体期待，会比解释一堆更容易被听懂。",
         }
       : undefined,
+    guidance: buildGuidance(req.scene, merged),
     replies,
   };
 }

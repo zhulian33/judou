@@ -116,6 +116,18 @@ export interface OpenerResult {
   timing?: string;
 }
 
+export interface AskRequest {
+  question: string;
+  scene?: Scene;
+  date?: string;
+}
+
+export interface AskResult {
+  answer: string;
+  basis: string[];
+  caution: string;
+}
+
 export interface SceneOption {
   id: Scene;
   label: string;

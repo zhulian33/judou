@@ -6,6 +6,7 @@ import type {
 } from "@/lib/types";
 
 export type DemoPattern =
+  | "cutoff"
   | "delay"
   | "withdrawal"
   | "urgency"
@@ -30,6 +31,32 @@ export interface DemoPatternData {
 }
 
 export const DEMO_PATTERNS: Record<Exclude<DemoPattern, "generic">, DemoPatternData> = {
+  cutoff: {
+    subtext: "TA 不想再聊了，这句话是在收场。",
+    emotion: "收着、有点烦，也不想再解释。",
+    intent: "结束现在这段对话，别再追问下去。",
+    thoughts: "算了，先停吧。再说下去只会更烦。",
+    nextLine: {
+      content: "先这样吧。",
+      confidence: "medium",
+      reason: "TA 会用更短的一句把话题收掉，而不是继续解释原因。",
+    },
+    readings: [
+      { title: "嫌烦了", explanation: "被追问或聊累了，只想马上停下来。", likelihood: "high" },
+      { title: "在降温", explanation: "还没有彻底翻脸，但想把距离重新拉开。", likelihood: "medium" },
+      { title: "没力气", explanation: "状态不好，不想解释，也不想被安慰。", likelihood: "low" },
+    ],
+    missingInfo: "看 TA 之后会不会自己回来找你。会回来是情绪，一直不回是真的想退。",
+    replies: [
+      { style: "gentle", label: "收住", content: "行，那先不聊了。你忙你的，我不打扰。" },
+      { style: "humor", label: "轻收", content: "收到，我先退场。下次想聊了喊我。" },
+      { style: "deadpan", label: "冷收", content: "好。那就到这。" },
+      { style: "straight", label: "留一句", content: "好，我不追问。等你愿意说的时候再说。" },
+    ],
+    score: 32,
+    trend: "cooling",
+    note: "热度在掉。现在唯一能加分的是给空间，不是解释。",
+  },
   delay: {
     subtext: "对方在把节奏往后放，但还没把门关死。",
     emotion: "语气客气，热乎劲儿在退。",
@@ -215,6 +242,9 @@ export const DEMO_PATTERNS: Record<Exclude<DemoPattern, "generic">, DemoPatternD
 };
 
 export function detectDemoPattern(message: string): DemoPattern {
+  if (/别聊了|不聊了|别说了|不说了|到此为止|没什么好说的/.test(message)) {
+    return "cutoff";
+  }
   if (/处理不了|想想办法|亲[，,]|无法处理|不在.*范围|请您/.test(message)) {
     return "service";
   }

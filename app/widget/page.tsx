@@ -8,7 +8,7 @@ import { useAccount } from "@/lib/useAccount";
 import type {
   AlmanacData,
   AnalyzeResult,
-  OpenerResult,
+  AskResult,
   Scene,
 } from "@/lib/types";
 
@@ -20,7 +20,7 @@ const SCENES: Array<{ id: Scene; label: string }> = [
   { id: "friend", label: "朋友" },
 ];
 
-type WidgetMode = "detail" | "reply" | "opener";
+type WidgetMode = "detail" | "reply" | "ask";
 
 function getDateByOffset(offset: number): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -45,10 +45,10 @@ export default function WidgetPage() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [openerIdea, setOpenerIdea] = useState("");
-  const [openerResult, setOpenerResult] = useState<OpenerResult | null>(null);
-  const [openerLoading, setOpenerLoading] = useState(false);
-  const [openerError, setOpenerError] = useState<string | null>(null);
+  const [question, setQuestion] = useState("");
+  const [askResult, setAskResult] = useState<AskResult | null>(null);
+  const [askLoading, setAskLoading] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { account, register } = useAccount();
@@ -94,7 +94,7 @@ export default function WidgetPage() {
 
     const frame = window.requestAnimationFrame(sendHeight);
     return () => window.cancelAnimationFrame(frame);
-  }, [almanac, mode, registerOpen, result, openerResult]);
+  }, [almanac, mode, registerOpen, result, askResult]);
 
   const bondScore = result?.affection?.score ?? result?.trust?.score ?? 0;
   const tint = 0.015 + (bondScore / 100) * 0.22;
@@ -136,37 +136,35 @@ export default function WidgetPage() {
     }
   }
 
-  async function askOpener() {
-    if (!openerIdea.trim()) {
-      setOpenerError("先说一句你想干嘛，哪怕只有几个字。");
+  async function askAlmanac() {
+    if (!question.trim()) {
+      setAskError("先写一句你想问的。");
       return;
     }
 
-    setOpenerLoading(true);
-    setOpenerError(null);
-    setOpenerResult(null);
+    setAskLoading(true);
+    setAskError(null);
+    setAskResult(null);
 
     try {
-      const response = await fetch("/api/opener", {
+      const response = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: openerIdea, scene }),
+        body: JSON.stringify({ question, scene }),
       });
-      const payload = (await response.json()) as
-        | OpenerResult
-        | { error: string };
+      const payload = (await response.json()) as AskResult | { error: string };
 
       if (!response.ok || "error" in payload) {
-        throw new Error("error" in payload ? payload.error : "没想出合适的开场。");
+        throw new Error("error" in payload ? payload.error : "没查出来。");
       }
 
-      setOpenerResult(payload);
+      setAskResult(payload);
     } catch (requestError) {
-      setOpenerError(
+      setAskError(
         requestError instanceof Error ? requestError.message : "请稍后再试。",
       );
     } finally {
-      setOpenerLoading(false);
+      setAskLoading(false);
     }
   }
 
@@ -375,7 +373,7 @@ export default function WidgetPage() {
             ) : null}
             </div>
           </div>
-        ) : mode === "opener" ? (
+        ) : mode === "ask" ? (
           <div className="max-h-[780px] overflow-y-auto px-4 py-4 min-[620px]:grid min-[620px]:grid-cols-[210px_1fr] min-[620px]:items-start min-[620px]:gap-4">
             <aside className="hidden min-[620px]:block">
               <p className="text-[9px] font-medium text-ink-400">
@@ -409,13 +407,13 @@ export default function WidgetPage() {
                   ← 回到黄历
                 </button>
                 <p className="text-[9px] tracking-[0.12em] text-ink-400">
-                  发一句
+                  问一句
                 </p>
               </div>
 
               <textarea
-                value={openerIdea}
-                onChange={(event) => setOpenerIdea(event.target.value)}
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
                 rows={3}
                 autoFocus
                 onFocus={(event) => {
@@ -424,90 +422,72 @@ export default function WidgetPage() {
                     node.scrollIntoView({ block: "center", behavior: "smooth" });
                   }, 220);
                 }}
-                placeholder="你想找对方，是为了什么？比如：想约吃饭，但怕太直接。"
+                placeholder="比如：今天适合约 TA 出来吗？"
                 className="mt-4 block w-full resize-none rounded-xl border border-black/10 bg-white px-3.5 py-3 text-[16px] leading-6 text-ink-900 outline-none focus:border-black/30"
               />
 
               <div className="mt-2 flex flex-wrap gap-1">
-                {SCENES.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setScene(item.id)}
-                    className={`rounded-full border px-2.5 py-1 text-[10px] ${
-                      scene === item.id
-                        ? "border-black bg-black text-white"
-                        : "border-black/10 bg-white text-ink-500"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                {["今天适合约 TA 吗", "今天适合把话说开吗", "今天适合谈钱吗"].map(
+                  (item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setQuestion(item)}
+                      className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[10px] text-ink-500 hover:text-ink-950"
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
               </div>
 
               <button
                 type="button"
-                onClick={askOpener}
-                disabled={openerLoading}
+                onClick={askAlmanac}
+                disabled={askLoading}
                 className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
               >
-                {openerLoading ? "正在想…" : "帮我想一句"}
+                {askLoading ? "正在排盘…" : "问一句"}
               </button>
 
-              {openerError ? (
-                <p className="mt-2 text-[10px] text-ink-500">{openerError}</p>
+              {askError ? (
+                <p className="mt-2 text-[10px] text-ink-500">{askError}</p>
               ) : null}
 
-              {openerResult ? (
+              {askResult ? (
                 <div className="mt-4 space-y-2">
-                  <div className="rounded-xl border border-black/10 bg-cream-50 px-3 py-2.5">
+                  <div className="rounded-xl border border-black/10 bg-white p-3">
                     <p className="text-[9px] font-semibold text-ink-400">
-                      先看对方那边
+                      今日排盘
                     </p>
-                    <p className="mt-1 text-[11px] leading-5 text-ink-700">
-                      {openerResult.read}
+                    <p className="mt-1 text-[12px] leading-5 text-ink-800">
+                      {askResult.answer}
                     </p>
                   </div>
-                  {openerResult.options.map((option) => (
-                    <div
-                      key={option.style}
-                      className="rounded-xl border border-black/10 bg-white p-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[9px] font-semibold text-ink-400">
-                          {option.label}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => copyReply(option.content, option.style)}
-                          aria-label={`复制${option.label}`}
-                          className="flex items-center gap-1 text-[9px] text-ink-400 hover:text-ink-950"
-                        >
-                          {copied === option.style ? (
-                            <>
-                              <CheckIcon className="h-3 w-3" /> 已复制
-                            </>
-                          ) : (
-                            <>
-                              <CopyIcon className="h-3 w-3" /> 复制
-                            </>
-                          )}
-                        </button>
-                      </div>
-                      <p className="mt-1.5 text-[12px] leading-5 text-ink-900">
-                        {option.content}
-                      </p>
-                    </div>
-                  ))}
-                  {openerResult.avoid ? (
-                    <p className="rounded-xl bg-white/70 px-3 py-2 text-[10px] leading-4 text-ink-500">
-                      别这样说：{openerResult.avoid}
+                  <div className="rounded-xl bg-cream-50 px-3 py-2.5">
+                    <p className="text-[9px] font-semibold text-ink-400">
+                      依据
                     </p>
-                  ) : null}
+                    <ul className="mt-1 space-y-0.5">
+                      {askResult.basis.map((item) => (
+                        <li
+                          key={item}
+                          className="flex gap-1.5 text-[10px] leading-4 text-ink-600"
+                        >
+                          <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-ink-950/40" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="px-1 text-[10px] leading-4 text-ink-500">
+                    {askResult.caution}
+                  </p>
                 </div>
               ) : null}
             </div>
           </div>
+
         ) : (
           <div className="px-4 pb-4 pt-3 min-[620px]:grid min-[620px]:grid-cols-2 min-[620px]:items-start min-[620px]:gap-x-6 min-[620px]:gap-y-3">
             <div className="flex items-center justify-between border-b border-black/10 pb-2 min-[620px]:col-span-2">
@@ -629,10 +609,10 @@ export default function WidgetPage() {
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setMode("opener")}
+                  onClick={() => setMode("ask")}
                   className="w-full rounded-xl bg-black px-3 py-3 text-[12px] font-semibold text-white"
                 >
-                  发一句
+                  问一句
                 </button>
                 <button
                   type="button"
