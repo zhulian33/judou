@@ -34,7 +34,14 @@ export function SummaryCard({ result }: { result: SummaryResult }) {
         </ul>
       ) : null}
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      {result.missing ? (
+        <p className="mt-3 rounded-xl border border-dashed border-ink-950/15 px-3.5 py-2.5 text-[11px] leading-5 text-ink-500">
+          <span className="font-semibold text-ink-600">还不确定：</span>
+          {result.missing}
+        </p>
+      ) : null}
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <div className="rounded-xl bg-cream-50 px-3.5 py-3">
           <p className="text-[9px] font-semibold tracking-[0.1em] text-ink-400">
             真正的问题

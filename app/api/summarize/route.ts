@@ -101,6 +101,7 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
     const core = readString(parsed.core);
     const meaning = readString(parsed.meaning);
     const advice = readString(parsed.advice);
+    const missing = readString(parsed.missing);
     const points = Array.isArray(parsed.points)
       ? parsed.points.map((item) => readString(item)).filter(Boolean).slice(0, 4)
       : [];
@@ -115,6 +116,7 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
       points,
       meaning,
       advice,
+      ...(missing ? { missing } : {}),
     };
   } catch (error) {
     console.error("[句读] summarize failed:", error);

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { CheckIcon, CopyIcon } from "@/components/Icons";
 import { RegisterDialog } from "@/components/RegisterDialog";
+import { SummaryCard } from "@/components/SummaryCard";
 import { useAccount } from "@/lib/useAccount";
 import { PLACES } from "@/lib/places";
 import type {
@@ -11,6 +12,7 @@ import type {
   AnalyzeResult,
   AskResult,
   Scene,
+  SummaryResult,
 } from "@/lib/types";
 
 const SCENES: Array<{ id: Scene; label: string }> = [
@@ -46,6 +48,9 @@ export default function WidgetPage() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<SummaryResult | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
   const [askResult, setAskResult] = useState<AskResult | null>(null);
   const [askLoading, setAskLoading] = useState(false);
@@ -124,6 +129,37 @@ export default function WidgetPage() {
 
   const bondScore = result?.affection?.score ?? result?.trust?.score ?? 0;
   const tint = 0.015 + (bondScore / 100) * 0.22;
+  async function summarize() {
+    if (message.trim().length < 20) {
+      setSummaryError("先把那段话贴进来，20 字以上才好拆。");
+      return;
+    }
+
+    setSummarizing(true);
+    setSummaryError(null);
+
+    try {
+      const response = await fetch("/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: message, scene }),
+      });
+      const payload = (await response.json()) as SummaryResult | { error: string };
+
+      if (!response.ok || "error" in payload) {
+        throw new Error("error" in payload ? payload.error : "没拆出来。");
+      }
+
+      setSummary(payload);
+    } catch (requestError) {
+      setSummaryError(
+        requestError instanceof Error ? requestError.message : "请稍后再试。",
+      );
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
   async function analyze() {
     if (!message.trim()) {
       setError("先把对方的话贴进来。");
@@ -138,7 +174,15 @@ export default function WidgetPage() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, scene }),
+        body: JSON.stringify({
+          message,
+          scene,
+          ...(summary
+            ? {
+                context: `【已提取核心】${summary.core}；真正的问题：${summary.meaning}${summary.missing ? `；还不确定：${summary.missing}` : ""}`,
+              }
+            : {}),
+        }),
       });
       const payload = (await response.json()) as
         | AnalyzeResult
@@ -322,7 +366,10 @@ export default function WidgetPage() {
 
             <textarea
               value={message}
-              onChange={(event) => setMessage(event.target.value)}
+              onChange={(event) => {
+                setMessage(event.target.value);
+                setSummary(null);
+              }}
               rows={4}
               autoFocus
               onFocus={(event) => {
@@ -352,17 +399,60 @@ export default function WidgetPage() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={analyze}
-              disabled={loading}
-              className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
-            >
-              {loading ? "正在看…" : "看看怎么回"}
-            </button>
+            {message.trim().length >= 60 && !summary ? (
+              <>
+                <button
+                  type="button"
+                  onClick={summarize}
+                  disabled={summarizing}
+                  className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
+                >
+                  {summarizing ? "正在拆这段…" : "先提取核心"}
+                </button>
+                <button
+                  type="button"
+                  onClick={analyze}
+                  disabled={loading}
+                  className="mt-1.5 w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-[11px] font-medium text-ink-600 disabled:opacity-60"
+                >
+                  跳过，直接看怎么回
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={analyze}
+                  disabled={loading}
+                  className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
+                >
+                  {loading ? "正在看…" : "看看怎么回"}
+                </button>
+                {message.trim().length >= 60 ? (
+                  <button
+                    type="button"
+                    onClick={summarize}
+                    disabled={summarizing}
+                    className="mt-1.5 w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-[11px] font-medium text-ink-600 disabled:opacity-60"
+                  >
+                    {summarizing ? "正在拆这段…" : "重新提取核心"}
+                  </button>
+                ) : null}
+              </>
+            )}
+
+            {summaryError ? (
+              <p className="mt-2 text-[10px] text-ink-500">{summaryError}</p>
+            ) : null}
 
             {error ? (
               <p className="mt-2 text-[10px] text-ink-500">{error}</p>
+            ) : null}
+
+            {summary ? (
+              <div className="mt-3">
+                <SummaryCard result={summary} />
+              </div>
             ) : null}
 
             {result ? (

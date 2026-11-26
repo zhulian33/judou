@@ -272,7 +272,15 @@ export default function Home() {
             message,
             scene,
             myWords: myWords.trim() || undefined,
-            context: context.trim() || undefined,
+            context:
+              [
+                context.trim(),
+                summary
+                  ? `【已提取核心】${summary.core}；真正的问题：${summary.meaning}${summary.missing ? `；还不确定：${summary.missing}` : ""}`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join("\n") || undefined,
             memory: memoryEntries.length
               ? formatMemory(memoryEntries)
               : undefined,

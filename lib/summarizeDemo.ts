@@ -50,6 +50,7 @@ export function buildSummaryDemo(req: SummaryRequest): SummaryResult {
         : "TA 在讲自己的感受，没有明确的诉求，更像是想被听见。",
     advice:
       "先回一句接住情绪的话，别急着解释自己；等 TA 情绪落下来，再问一句具体的。",
+    missing: "还不确定 TA 是嫌烦、在忙，还是被别的事影响——需要看 TA 接下来会不会主动。",
   };
 }
 

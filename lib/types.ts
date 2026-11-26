@@ -182,6 +182,8 @@ export interface SummaryResult {
   meaning: string;
   /** 你接下来该做什么 */
   advice: string;
+  /** 还缺什么信息 / 哪里不确定 */
+  missing?: string;
 }
 
 export interface SceneOption {

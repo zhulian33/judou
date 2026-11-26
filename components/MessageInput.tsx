@@ -48,6 +48,7 @@ export function MessageInput({
   onPickExample,
 }: MessageInputProps) {
   const isOpener = mode === "opener";
+  const needsCore = message.trim().length >= 60 && !summaryReady;
   const [showContext, setShowContext] = useState(false);
   const [showGender, setShowGender] = useState(false);
   useEffect(() => {
@@ -256,38 +257,65 @@ export function MessageInput({
         </p>
       ) : null}
 
-      {message.trim().length >= 60 ? (
-        <button
-          type="button"
-          onClick={onSummarize}
-          disabled={summarizing}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-950/12 bg-cream-50 px-4 py-2.5 text-[12px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:cursor-wait disabled:opacity-60"
-        >
-          {summarizing
-            ? "正在拆这段…"
-            : summaryReady
-              ? "重新提取核心"
-              : "太长了？先提取核心意思"}
-        </button>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-950 px-5 py-4 text-[15px] font-semibold text-cream-50 shadow-[0_12px_30px_-20px_rgba(27,33,28,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ember-700 disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0"
-      >
-        {loading ? (
-          <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream-100/30 border-t-cream-50" />
-            正在读潜台词…
-          </>
-        ) : (
-          <>
-            {isOpener ? "帮我想开场" : "看看怎么回"}
-            <ArrowUpRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </>
-        )}
-      </button>
+      {needsCore ? (
+        <>
+          <button
+            type="button"
+            onClick={onSummarize}
+            disabled={summarizing}
+            className="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-950 px-5 py-4 text-[15px] font-semibold text-cream-50 shadow-[0_12px_30px_-20px_rgba(27,33,28,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ember-700 disabled:cursor-wait disabled:opacity-70"
+          >
+            {summarizing ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream-100/30 border-t-cream-50" />
+                正在拆这段…
+              </>
+            ) : (
+              <>
+                先提取核心
+                <ArrowUpRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </>
+            )}
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 w-full rounded-xl border border-ink-950/12 bg-white px-4 py-2.5 text-[12px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:opacity-60"
+          >
+            跳过，直接看怎么回
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="submit"
+            disabled={loading}
+            className="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-950 px-5 py-4 text-[15px] font-semibold text-cream-50 shadow-[0_12px_30px_-20px_rgba(27,33,28,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ember-700 disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0"
+          >
+            {loading ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream-100/30 border-t-cream-50" />
+                正在读潜台词…
+              </>
+            ) : (
+              <>
+                看看怎么回
+                <ArrowUpRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </>
+            )}
+          </button>
+          {message.trim().length >= 60 ? (
+            <button
+              type="button"
+              onClick={onSummarize}
+              disabled={summarizing}
+              className="mt-2 w-full rounded-xl border border-ink-950/12 bg-cream-50 px-4 py-2.5 text-[12px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:cursor-wait disabled:opacity-60"
+            >
+              {summarizing ? "正在拆这段…" : "重新提取核心"}
+            </button>
+          ) : null}
+        </>
+      )}
       <p className="mt-2 text-[9px] leading-4 text-ink-400">
         未配置自有模型时，会使用有频率限制的公共模型服务。请勿输入身份证、住址等敏感信息。
       </p>
