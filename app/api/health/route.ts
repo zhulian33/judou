@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { getBuildId } from "@/lib/build";
+
+function appVersion(): string {
+  try {
+    const raw = readFileSync(path.join(process.cwd(), "package.json"), "utf8");
+    return (JSON.parse(raw) as { version?: string }).version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +27,7 @@ export async function GET() {
       build: getBuildId() || "dev",
       time: new Date().toISOString(),
       model: configured ? "configured" : "public-fallback",
-      version: process.env.npm_package_version ?? "0.1.0",
+      version: appVersion(),
     },
     {
       headers: {
