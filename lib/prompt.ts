@@ -43,7 +43,10 @@ function getTodayLabel(): string {
   return `${get("month")}.${get("day")} · ${get("weekday")}`;
 }
 
-export function buildPrompt(req: AnalyzeRequest): string {
+export function buildPrompt(
+  req: AnalyzeRequest,
+  options: { narration?: boolean } = {},
+): string {
   const scene = getSceneOption(req.scene);
   const examples = FEW_SHOT_EXAMPLES.map((example, index) =>
     formatExample(index, example),
@@ -61,7 +64,11 @@ export function buildPrompt(req: AnalyzeRequest): string {
         ? "男性。可以在自然处使用「他」，但不要根据性别推断性格或制造刻板印象。"
         : "未提供。绝对不要使用「她」或「他」，不要从名字、职业、语气里猜性别；统一用「对方」或「TA」。";
 
-  return `请解读下面这条消息：先判断对方真正的情绪和意图，再给出接下来该怎么走的方向。
+  const narration = options.narration
+    ? `\n\n## 注意：这段是用户在讲一整件事，不是对方发来的一句话\n用户把整件事复述了一遍。请按「整件事」分析：\n- subject.who 只能是 self（在讲别人/讲这件事）或 third，label 写成「你在讲这件事」；\n- thoughts 写成「她/他现在心里可能在想……」的推测，不要写成「TA 对我说」；\n- nextLine 写「对方接下来可能会怎么做」，不是下一句话；\n- guidance 针对「这件事该怎么办」，不要说「顺着这句话回」。`
+    : "";
+
+  return `请解读下面这条消息：先判断对方真正的情绪和意图，再给出接下来该怎么走的方向。${narration}
 
 ## 当前场景
 ${scene.label}（${scene.id}）

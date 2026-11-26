@@ -103,6 +103,8 @@ export interface AnalyzeResult {
   trust?: AffectionInsight;
   guidance?: GuidanceInsight;
   subject?: SubjectInsight;
+  /** received = 对方发来的消息；narration = 用户自己在讲一整件事 */
+  framing?: "received" | "narration";
   replies: ReplyOption[];
 }
 

@@ -370,7 +370,7 @@ export default function WidgetPage() {
                 <div className="rounded-xl border border-black/10 bg-cream-50 px-3 py-2.5">
                   <div className="flex items-center justify-between">
                     <p className="text-[9px] font-semibold text-ink-400">
-                      对方内心 OS
+                      {result.framing === "narration" ? "TA 大概在想" : "对方内心 OS"}
                     </p>
                     {result.subject ? (
                       <span className="rounded-full bg-ink-950 px-2 py-0.5 text-[8px] text-white">
@@ -382,7 +382,7 @@ export default function WidgetPage() {
                     “{result.thoughts}”
                   </p>
                   <p className="mt-2 text-[9px] font-semibold text-ink-400">
-                    下一句可能会说
+                    {result.framing === "narration" ? "接下来可能会" : "下一句可能会说"}
                   </p>
                   <p className="mt-1 text-[11px] leading-5 text-ink-700">
                     {result.nextLine.content}

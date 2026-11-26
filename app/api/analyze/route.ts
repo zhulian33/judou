@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { buildDemoResult } from "@/lib/demo";
 import { buildPrompt, SYSTEM_PROMPT } from "@/lib/prompt";
 import { buildGuidance } from "@/lib/guidance";
+import { looksLikeNarration } from "@/lib/narration";
 import { guessSubject, SUBJECT_LABEL } from "@/lib/subject";
 import { checkContentSafety } from "@/lib/safety";
 import { isScene } from "@/lib/scenes";
@@ -524,6 +525,7 @@ function normalizeResult(
   scene: AnalyzeRequest["scene"],
   hasMyWords: boolean,
   message: string,
+  narration: boolean,
 ): AnalyzeResult | null {
   if (!isRecord(value) || !Array.isArray(value.replies)) {
     return null;
@@ -608,7 +610,9 @@ function normalizeResult(
     value.guidance,
     buildGuidance(scene, { subtext, emotion, intent, risk }),
   );
-  const subject = normalizeSubject(value.subject, guessSubject(message));
+  const subject = narration
+    ? { who: "third" as const, label: "你在讲这件事" }
+    : normalizeSubject(value.subject, guessSubject(message));
 
   return {
     subtext,
@@ -627,6 +631,7 @@ function normalizeResult(
     ...(trust ? { trust } : {}),
     guidance,
     subject,
+    framing: narration ? "narration" : "received",
     replies: [gentle, humor, deadpan, straight],
   };
 }
@@ -655,7 +660,8 @@ export async function POST(request: Request) {
 
   const usingConfiguredModel = Boolean(getConfiguredKey());
   const source: ModelSource = usingConfiguredModel ? "configured" : "public";
-  const prompt = buildPrompt(analyzeRequest);
+  const narration = looksLikeNarration(analyzeRequest.message);
+  const prompt = buildPrompt(analyzeRequest, { narration });
   let lastOutput = "";
 
   try {
@@ -680,6 +686,7 @@ export async function POST(request: Request) {
         analyzeRequest.scene,
         Boolean(analyzeRequest.myWords),
         analyzeRequest.message,
+        narration,
       );
 
       if (result) {

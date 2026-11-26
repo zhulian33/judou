@@ -24,7 +24,7 @@ export function ThoughtBubble({ result }: ThoughtBubbleProps) {
             id="thought-title"
             className="mt-1 text-2xl font-semibold text-ink-950"
           >
-            对方内心大概在想
+            {result.framing === "narration" ? "TA 大概在想" : "对方内心大概在想"}
           </h2>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -63,7 +63,7 @@ export function ThoughtBubble({ result }: ThoughtBubbleProps) {
         <div className="border-t border-ink-950/10 px-4 py-4 sm:px-5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[10px] font-semibold tracking-[0.14em] text-ink-400">
-              下一句，对方可能会说
+              {result.framing === "narration" ? "接下来可能会" : "下一句，对方可能会说"}
             </p>
             <span className="text-[9px] font-medium text-ink-500">
               {CONFIDENCE_LABELS[result.nextLine.confidence]}
