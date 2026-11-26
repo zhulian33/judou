@@ -179,3 +179,67 @@ export function buildChart(birth: BirthInfo): ChartResult | null {
     lines,
   };
 }
+
+const SHENG: Record<string, string> = { 木: "火", 火: "土", 土: "金", 金: "水", 水: "木" };
+const KE: Record<string, string> = { 木: "土", 土: "水", 水: "火", 火: "金", 金: "木" };
+
+export interface SynastryResult {
+  relation: string;
+  note: string;
+  selfLine: string;
+  partnerLine: string;
+}
+
+/** 合盘：只看两个盘的日主五行关系和互补，不预测关系走向。 */
+export function buildSynastry(
+  self: ChartResult,
+  partner: ChartResult,
+): SynastryResult {
+  const a = self.dayMasterElement;
+  const b = partner.dayMasterElement;
+
+  let relation: string;
+  let note: string;
+
+  if (!a || !b) {
+    relation = "五行信息不足";
+    note = "有一方的日主五行没算出来，先按普通相处建议来。";
+  } else if (a === b) {
+    relation = `同气（都是${a}）`;
+    note = "同频，很容易聊到一块，也容易同时卡在同一个点上。谁先停下来，谁就能把节奏带出去。";
+  } else if (SHENG[a] === b) {
+    relation = `${a}生${b}：你在托 TA`;
+    note = "你天然是付出的一方，容易累；TA 未必是不领情，只是习惯被接住。记得留一半力气给自己。";
+  } else if (SHENG[b] === a) {
+    relation = `${b}生${a}：TA 在托你`;
+    note = "TA 在能量上更照顾你，你更容易放松。别把这当成理所当然，偶尔主动一次会更稳。";
+  } else if (KE[a] === b) {
+    relation = `${a}克${b}：你容易压到 TA`;
+    note = "你的推进方式对 TA 来说偏重。把节奏放慢，多问一句「这样行吗」，比直接给方案有效。";
+  } else if (KE[b] === a) {
+    relation = `${b}克${a}：TA 容易压到你`;
+    note = "TA 的节奏会压到你，容易让你自我怀疑。先分清哪些是 TA 的事，不用全接过来。";
+  } else {
+    relation = `${a} 与 ${b} 无明显生克`;
+    note = "两边节奏不太一样，说清楚期待比互相猜更省事。";
+  }
+
+  const selfWeak = self.wuXing[self.wuXing.length - 1];
+  const partnerStrong = partner.wuXing[0];
+  const partnerWeak = partner.wuXing[partner.wuXing.length - 1];
+  const selfStrong = self.wuXing[0];
+
+  const complement =
+    selfWeak.element === partnerStrong.element
+      ? `你缺的${selfWeak.element}，正好是 TA 旺的，TA 能补你这一块。`
+      : selfStrong.element === partnerWeak.element
+        ? `TA 缺的${partnerWeak.element}，正好是你多的，你能补 TA 这一块。`
+        : "";
+
+  return {
+    relation,
+    note: complement ? `${note}${complement}` : note,
+    selfLine: `你：${self.dayMaster}${self.dayMasterElement}｜${self.wuXing.map((w) => w.element + w.count).join(" ")}`,
+    partnerLine: `TA：${partner.dayMaster}${partner.dayMasterElement}｜${partner.wuXing.map((w) => w.element + w.count).join(" ")}`,
+  };
+}

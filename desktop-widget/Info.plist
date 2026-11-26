@@ -28,6 +28,8 @@
   <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>句读需要读取项目目录里的网页和构建文件，才能启动本地黄历与回复服务。</string>
   <key>NSAppTransportSecurity</key>
   <dict>
     <key>NSAllowsLocalNetworking</key>

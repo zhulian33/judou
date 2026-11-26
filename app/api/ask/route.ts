@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isValidDateString } from "@/lib/almanac";
 import { buildAskDemo } from "@/lib/askDemo";
-import { buildChart } from "@/lib/chart";
+import { buildChart, buildSynastry } from "@/lib/chart";
 import { ASK_SYSTEM_PROMPT, buildAskPrompt } from "@/lib/askPrompt";
 import { isScene } from "@/lib/scenes";
 import type { AskRequest, AskResult, Scene } from "@/lib/types";
@@ -138,6 +138,12 @@ export async function POST(request: Request) {
   const birthPlace = birthRaw ? readString(birthRaw.place) : "";
   const birthLongitude = birthRaw ? Number(birthRaw.longitude) : Number.NaN;
   const birthGender = birthRaw ? readString(birthRaw.gender) : "";
+  const partnerRaw = isRecord(body.partnerBirth) ? body.partnerBirth : null;
+  const partnerDate = partnerRaw ? readString(partnerRaw.date) : "";
+  const partnerHour = partnerRaw ? Number(partnerRaw.hour) : Number.NaN;
+  const partnerMinute = partnerRaw ? Number(partnerRaw.minute) : Number.NaN;
+  const partnerPlace = partnerRaw ? readString(partnerRaw.place) : "";
+  const partnerGender = partnerRaw ? readString(partnerRaw.gender) : "";
 
   if (!question) {
     return NextResponse.json({ error: "先写一句你想问的。" }, { status: 400 });
@@ -151,6 +157,13 @@ export async function POST(request: Request) {
   if (date && !isValidDateString(date)) {
     return NextResponse.json(
       { error: "日期格式不正确，请使用 YYYY-MM-DD。" },
+      { status: 400 },
+    );
+  }
+
+  if (partnerDate && !isValidDateString(partnerDate)) {
+    return NextResponse.json(
+      { error: "对方生日格式不正确，请使用 YYYY-MM-DD。" },
       { status: 400 },
     );
   }
@@ -180,11 +193,29 @@ export async function POST(request: Request) {
           },
         }
       : {}),
+    ...(partnerDate
+      ? {
+          partnerBirth: {
+            date: partnerDate,
+            ...(Number.isFinite(partnerHour) ? { hour: partnerHour } : {}),
+            ...(Number.isFinite(partnerMinute) ? { minute: partnerMinute } : {}),
+            ...(partnerPlace ? { place: partnerPlace } : {}),
+            ...(partnerGender === "male" || partnerGender === "female"
+              ? { gender: partnerGender }
+              : {}),
+          },
+        }
+      : {}),
   };
 
   const modeled = await askModel(payload);
   const base = modeled ?? buildAskDemo(payload);
   const chart = payload.birth ? buildChart(payload.birth) : null;
+  const partnerChart = payload.partnerBirth
+    ? buildChart(payload.partnerBirth)
+    : null;
+  const synastry =
+    chart && partnerChart ? buildSynastry(chart, partnerChart) : null;
   const result = {
     ...base,
     ...(chart
@@ -201,6 +232,19 @@ export async function POST(request: Request) {
           basis: [...base.basis.slice(0, 2), `命盘：${chart.pillars}`],
         }
       : {}),
+    ...(partnerChart
+      ? {
+          partnerChart: {
+            pillars: partnerChart.pillars,
+            dayMaster: partnerChart.dayMaster,
+            dayMasterElement: partnerChart.dayMasterElement,
+            lines: partnerChart.lines.slice(1),
+            wuXing: partnerChart.wuXing,
+            solarTime: partnerChart.solarTime,
+          },
+        }
+      : {}),
+    ...(synastry ? { synastry } : {}),
   };
 
   return NextResponse.json(result, {

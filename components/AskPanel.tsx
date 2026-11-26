@@ -31,6 +31,11 @@ export function AskPanel({ scene }: { scene: Scene }) {
   const [birthPlace, setBirthPlace] = useState("");
   const [birthGender, setBirthGender] = useState("");
   const [showBirth, setShowBirth] = useState(false);
+  const [partnerDate, setPartnerDate] = useState("");
+  const [partnerTime, setPartnerTime] = useState("");
+  const [partnerPlace, setPartnerPlace] = useState("");
+  const [partnerGender, setPartnerGender] = useState("");
+  const [showPartner, setShowPartner] = useState(false);
 
   useEffect(() => {
     try {
@@ -46,10 +51,42 @@ export function AskPanel({ scene }: { scene: Scene }) {
       if (parsed.time) setBirthTime(parsed.time);
       if (parsed.place) setBirthPlace(parsed.place);
       if (parsed.gender) setBirthGender(parsed.gender);
+      const partnerRaw = window.localStorage.getItem("judou.partner.v1");
+      if (partnerRaw) {
+        const partner = JSON.parse(partnerRaw) as {
+          date?: string;
+          time?: string;
+          place?: string;
+          gender?: string;
+        };
+        if (partner.date) setPartnerDate(partner.date);
+        if (partner.time) setPartnerTime(partner.time);
+        if (partner.place) setPartnerPlace(partner.place);
+        if (partner.gender) setPartnerGender(partner.gender);
+      }
     } catch {
       // 忽略损坏的本地数据
     }
   }, []);
+
+  function savePartner(patch: {
+    date?: string;
+    time?: string;
+    place?: string;
+    gender?: string;
+  }) {
+    const next = {
+      date: patch.date ?? partnerDate,
+      time: patch.time ?? partnerTime,
+      place: patch.place ?? partnerPlace,
+      gender: patch.gender ?? partnerGender,
+    };
+    setPartnerDate(next.date);
+    setPartnerTime(next.time);
+    setPartnerPlace(next.place);
+    setPartnerGender(next.gender);
+    window.localStorage.setItem("judou.partner.v1", JSON.stringify(next));
+  }
 
   function saveBirth(patch: {
     date?: string;
@@ -100,6 +137,23 @@ export function AskPanel({ scene }: { scene: Scene }) {
                   ...(birthPlace ? { place: birthPlace } : {}),
                   ...(birthGender === "male" || birthGender === "female"
                     ? { gender: birthGender }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(partnerDate
+            ? {
+                partnerBirth: {
+                  date: partnerDate,
+                  ...(partnerTime
+                    ? {
+                        hour: Number(partnerTime.split(":")[0]),
+                        minute: Number(partnerTime.split(":")[1]),
+                      }
+                    : {}),
+                  ...(partnerPlace ? { place: partnerPlace } : {}),
+                  ...(partnerGender === "male" || partnerGender === "female"
+                    ? { gender: partnerGender }
                     : {}),
                 },
               }
@@ -223,6 +277,66 @@ export function AskPanel({ scene }: { scene: Scene }) {
         </p>
       </div>
 
+      <div className="mt-2 rounded-xl border border-ink-950/10 bg-cream-50 px-3.5 py-3">
+        <button
+          type="button"
+          onClick={() => setShowPartner((value) => !value)}
+          className="flex w-full items-center justify-between text-[11px] font-medium text-ink-600"
+        >
+          <span>
+            TA 的生辰
+            {partnerDate ? ` · ${partnerDate}` : "（可选，填了做合盘）"}
+          </span>
+          <span className="text-[10px] text-ink-400">
+            {showPartner ? "收起" : "填写"}
+          </span>
+        </button>
+        {showPartner ? (
+          <div className="mt-2.5 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={partnerDate}
+                onChange={(event) => savePartner({ date: event.target.value })}
+                className="flex-1 rounded-lg border border-ink-950/10 bg-white px-2.5 py-2 text-[12px] text-ink-800 outline-none"
+              />
+              <input
+                type="time"
+                value={partnerTime}
+                onChange={(event) => savePartner({ time: event.target.value })}
+                className="w-[110px] rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={partnerPlace}
+                onChange={(event) => savePartner({ place: event.target.value })}
+                className="flex-1 rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
+              >
+                <option value="">出生城市</option>
+                {PLACES.map((place) => (
+                  <option key={place.name} value={place.name}>
+                    {place.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={partnerGender}
+                onChange={(event) => savePartner({ gender: event.target.value })}
+                className="w-[110px] rounded-lg border border-ink-950/10 bg-white px-2 py-2 text-[12px] text-ink-800 outline-none"
+              >
+                <option value="">性别</option>
+                <option value="female">女</option>
+                <option value="male">男</option>
+              </select>
+            </div>
+          </div>
+        ) : null}
+        <p className="mt-1.5 text-[10px] leading-4 text-ink-400">
+          合盘只看两边的日主五行和互补，不判断「能不能在一起」。
+        </p>
+      </div>
+
       <button
         type="button"
         onClick={ask}
@@ -283,6 +397,24 @@ export function AskPanel({ scene }: { scene: Scene }) {
                     {line}
                   </p>
                 ))}
+              </div>
+            </div>
+          ) : null}
+
+          {result.synastry ? (
+            <div className="rounded-2xl border border-ink-950/10 bg-white p-4">
+              <p className="text-[9px] font-semibold tracking-[0.14em] text-ink-400">
+                合盘 · 民俗参考
+              </p>
+              <p className="mt-1.5 font-serif text-[15px] text-ink-950">
+                {result.synastry.relation}
+              </p>
+              <p className="mt-1 text-[11px] leading-5 text-ink-600">
+                {result.synastry.note}
+              </p>
+              <div className="mt-2 grid gap-1 text-[10px] leading-4 text-ink-500">
+                <p>{result.synastry.selfLine}</p>
+                <p>{result.synastry.partnerLine}</p>
               </div>
             </div>
           ) : null}

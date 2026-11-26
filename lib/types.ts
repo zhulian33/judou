@@ -146,6 +146,8 @@ export interface AskRequest {
   scene?: Scene;
   date?: string;
   birth?: BirthInfo;
+  /** 对方生辰，填了才做合盘 */
+  partnerBirth?: BirthInfo;
 }
 
 export interface AskChart {
@@ -164,6 +166,14 @@ export interface AskResult {
   caution: string;
   /** 有生辰时返回命盘，方便界面显示 */
   chart?: AskChart;
+  /** 填了对方生辰时的合盘 */
+  partnerChart?: AskChart;
+  synastry?: {
+    relation: string;
+    note: string;
+    selfLine: string;
+    partnerLine: string;
+  };
 }
 
 export interface SummaryRequest {

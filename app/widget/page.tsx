@@ -60,6 +60,11 @@ export default function WidgetPage() {
   const [birthPlace, setBirthPlace] = useState("");
   const [birthGender, setBirthGender] = useState("");
   const [showBirth, setShowBirth] = useState(false);
+  const [partnerDate, setPartnerDate] = useState("");
+  const [partnerTime, setPartnerTime] = useState("");
+  const [partnerPlace, setPartnerPlace] = useState("");
+  const [partnerGender, setPartnerGender] = useState("");
+  const [showPartner, setShowPartner] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { account, register } = useAccount();
@@ -78,6 +83,19 @@ export default function WidgetPage() {
         if (parsed.time) setBirthTime(parsed.time);
         if (parsed.place) setBirthPlace(parsed.place);
         if (parsed.gender) setBirthGender(parsed.gender);
+        const partnerRaw = window.localStorage.getItem("judou.partner.v1");
+        if (partnerRaw) {
+          const partner = JSON.parse(partnerRaw) as {
+            date?: string;
+            time?: string;
+            place?: string;
+            gender?: string;
+          };
+          if (partner.date) setPartnerDate(partner.date);
+          if (partner.time) setPartnerTime(partner.time);
+          if (partner.place) setPartnerPlace(partner.place);
+          if (partner.gender) setPartnerGender(partner.gender);
+        }
       }
     } catch {
       // 忽略损坏的本地数据
@@ -236,6 +254,23 @@ export default function WidgetPage() {
                   ...(birthPlace ? { place: birthPlace } : {}),
                   ...(birthGender === "male" || birthGender === "female"
                     ? { gender: birthGender }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(partnerDate
+            ? {
+                partnerBirth: {
+                  date: partnerDate,
+                  ...(partnerTime
+                    ? {
+                        hour: Number(partnerTime.split(":")[0]),
+                        minute: Number(partnerTime.split(":")[1]),
+                      }
+                    : {}),
+                  ...(partnerPlace ? { place: partnerPlace } : {}),
+                  ...(partnerGender === "male" || partnerGender === "female"
+                    ? { gender: partnerGender }
                     : {}),
                 },
               }
@@ -399,47 +434,29 @@ export default function WidgetPage() {
               ))}
             </div>
 
-            {message.trim().length >= 60 && !summary ? (
-              <>
-                <button
-                  type="button"
-                  onClick={summarize}
-                  disabled={summarizing}
-                  className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
-                >
-                  {summarizing ? "正在拆这段…" : "先提取核心"}
-                </button>
-                <button
-                  type="button"
-                  onClick={analyze}
-                  disabled={loading}
-                  className="mt-1.5 w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-[11px] font-medium text-ink-600 disabled:opacity-60"
-                >
-                  跳过，直接看怎么回
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={analyze}
-                  disabled={loading}
-                  className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
-                >
-                  {loading ? "正在看…" : "看看怎么回"}
-                </button>
-                {message.trim().length >= 60 ? (
-                  <button
-                    type="button"
-                    onClick={summarize}
-                    disabled={summarizing}
-                    className="mt-1.5 w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-[11px] font-medium text-ink-600 disabled:opacity-60"
-                  >
-                    {summarizing ? "正在拆这段…" : "重新提取核心"}
-                  </button>
-                ) : null}
-              </>
-            )}
+            {message.trim().length >= 20 ? (
+              <button
+                type="button"
+                onClick={summarize}
+                disabled={summarizing}
+                className="mt-3 w-full rounded-xl border border-black/12 bg-white px-4 py-2.5 text-[11px] font-medium text-ink-600 disabled:opacity-60"
+              >
+                {summarizing
+                  ? "正在拆这段…"
+                  : summary
+                    ? "重新提取核心"
+                    : "先提取核心"}
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={analyze}
+              disabled={loading}
+              className="mt-1.5 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
+            >
+              {loading ? "正在看…" : "看看怎么回"}
+            </button>
 
             {summaryError ? (
               <p className="mt-2 text-[10px] text-ink-500">{summaryError}</p>
@@ -692,6 +709,89 @@ export default function WidgetPage() {
                 </p>
               </div>
 
+              <div className="mt-1.5 rounded-xl border border-black/10 bg-white/70 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPartner((value) => !value)}
+                  className="flex w-full items-center justify-between text-[10px] text-ink-500"
+                >
+                  <span>
+                    TA 的生辰（合盘）
+                    {partnerDate ? ` · ${partnerDate}` : ""}
+                  </span>
+                  <span>{showPartner ? "收起" : "填写"}</span>
+                </button>
+                {showPartner ? (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex gap-1.5">
+                      <input
+                        type="date"
+                        value={partnerDate}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPartnerDate(value);
+                          window.localStorage.setItem(
+                            "judou.partner.v1",
+                            JSON.stringify({ date: value, time: partnerTime, place: partnerPlace, gender: partnerGender }),
+                          );
+                        }}
+                        className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      />
+                      <input
+                        type="time"
+                        value={partnerTime}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPartnerTime(value);
+                          window.localStorage.setItem(
+                            "judou.partner.v1",
+                            JSON.stringify({ date: partnerDate, time: value, place: partnerPlace, gender: partnerGender }),
+                          );
+                        }}
+                        className="w-[86px] rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      />
+                    </div>
+                    <div className="flex gap-1.5">
+                      <select
+                        value={partnerPlace}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPartnerPlace(value);
+                          window.localStorage.setItem(
+                            "judou.partner.v1",
+                            JSON.stringify({ date: partnerDate, time: partnerTime, place: value, gender: partnerGender }),
+                          );
+                        }}
+                        className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      >
+                        <option value="">出生城市</option>
+                        {PLACES.map((place) => (
+                          <option key={place.name} value={place.name}>
+                            {place.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={partnerGender}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPartnerGender(value);
+                          window.localStorage.setItem(
+                            "judou.partner.v1",
+                            JSON.stringify({ date: partnerDate, time: partnerTime, place: partnerPlace, gender: value }),
+                          );
+                        }}
+                        className="w-[76px] rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-ink-800 outline-none"
+                      >
+                        <option value="">性别</option>
+                        <option value="female">女</option>
+                        <option value="male">男</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
               <button
                 type="button"
                 onClick={askAlmanac}
@@ -728,6 +828,19 @@ export default function WidgetPage() {
                           {line}
                         </p>
                       ))}
+                    </div>
+                  ) : null}
+                  {askResult.synastry ? (
+                    <div className="rounded-xl border border-black/10 bg-white p-3">
+                      <p className="text-[9px] font-semibold text-ink-400">
+                        合盘（民俗参考）
+                      </p>
+                      <p className="mt-1 text-[11px] leading-5 text-ink-800">
+                        {askResult.synastry.relation}
+                      </p>
+                      <p className="mt-1 text-[10px] leading-4 text-ink-600">
+                        {askResult.synastry.note}
+                      </p>
                     </div>
                   ) : null}
                   <div className="rounded-xl bg-cream-50 px-3 py-2.5">

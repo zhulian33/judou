@@ -115,7 +115,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
       .deletingLastPathComponent()
   }
 
+  /// 项目在「文稿」里时，macOS 会拦一层隐私权限。
+  /// 这里主动读一次目录，让系统把授权弹窗弹出来，子进程才拿得到权限。
+  private func requestProjectAccess() {
+    _ = try? FileManager.default.contentsOfDirectory(atPath: projectRoot.path)
+  }
+
   private func ensureServerAndLoad() {
+    requestProjectAccess()
     guard !isConnecting else { return }
     isConnecting = true
     probeExistingServer(candidates: [3211, 4321], index: 0)
@@ -242,6 +249,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     let root = projectRoot.path
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+    process.standardInput = FileHandle(forReadingAtPath: "/dev/null")
+    process.standardOutput = FileHandle(forWritingAtPath: "/dev/null")
+    process.standardError = FileHandle(forWritingAtPath: "/dev/null")
     process.arguments = [
       "-lc",
       "cd \(shellQuote(root)) && export PATH=\"$PATH:/opt/homebrew/bin:/usr/local/bin\" && if [ -f .next/BUILD_ID ]; then exec node node_modules/next/dist/bin/next start -p \(port); else exec node node_modules/next/dist/bin/next dev -p \(port); fi > /tmp/judou-widget-\(port).log 2>&1"
@@ -315,7 +325,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     <body style="font-family:-apple-system;padding:26px;color:#1b211c;background:#f7f7f5">
     <h2 style="margin:0 0 10px">句读没有启动</h2>
     <p style="font-size:13px;line-height:1.7;color:#69736b">
-    本地服务没连上。点下面重试；如果一直打不开，确认电脑装了 Node.js。</p>
+    本地服务没连上。点下面重试。</p>
+    <p style="font-size:12px;line-height:1.7;color:#69736b;margin-top:10px">
+    如果一直打不开：项目放在「文稿」里时，macOS 需要授权。<br>
+    系统设置 → 隐私与安全性 → 完全磁盘访问权限 → 添加「句读JUDOU」，然后重开。</p>
     <button onclick="window.webkit.messageHandlers.judouReload.postMessage(1)"
       style="margin-top:18px;border:0;border-radius:12px;background:#1b211c;color:#fff;padding:11px 20px;font-size:13px;font-weight:600">
     重新连接</button>
