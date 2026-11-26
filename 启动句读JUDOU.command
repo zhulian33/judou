@@ -13,8 +13,8 @@ if [ ! -f ".next/BUILD_ID" ]; then
   npm run build
 fi
 
-if [ ! -d "desktop-widget/句读桌面黄历.app" ]; then
+if [ ! -d "desktop-widget/句读JUDOU.app" ]; then
   zsh desktop-widget/build-app.sh
 fi
 
-open "desktop-widget/句读桌面黄历.app"
+open "desktop-widget/句读JUDOU.app"

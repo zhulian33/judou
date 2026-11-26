@@ -7,6 +7,7 @@ import { isScene } from "@/lib/scenes";
 import type {
   AffectionInsight,
   AnalyzeRequest,
+  GuidanceInsight,
   AnalyzeResult,
   ApiErrorBody,
   Gender,
@@ -451,6 +452,94 @@ function normalizeAffection(value: unknown): AffectionInsight | null {
   };
 }
 
+function splitKeep(value: unknown): string[] {
+  const raw = Array.isArray(value)
+    ? value.map((item) => readString(item))
+    : typeof value === "string"
+      ? value.split(/[\n；;、]/).map((item) => item.trim())
+      : [];
+
+  return raw
+    .map((item) => item.replace(/^[0-9一二三四五①-⑤.、)）\s-]+/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+/// 模型经常把结构写歪，这里尽量接住，实在缺再用已有分析补。
+function normalizeGuidance(
+  value: unknown,
+  fallback: GuidanceInsight,
+): GuidanceInsight {
+  if (!isRecord(value)) {
+    return fallback;
+  }
+
+  const read =
+    readString(value.read) ||
+    readString(value.summary) ||
+    readString(value.state) ||
+    fallback.read;
+  const direction =
+    readString(value.direction) ||
+    readString(value.advice) ||
+    readString(value.guidance) ||
+    fallback.direction;
+  const avoid =
+    readString(value.avoid) ||
+    readString(value.warning) ||
+    readString(value.risk) ||
+    fallback.avoid;
+  const keep = splitKeep(value.keep ?? value.principles ?? value.tips);
+
+  return {
+    read,
+    direction,
+    keep: keep.length > 0 ? keep : fallback.keep,
+    avoid,
+  };
+}
+
+/// 模型没给 guidance 时，用它的分析结果 + 场景提示拼方向，尽量不写成套话。
+const SCENE_HINT: Record<AnalyzeRequest["scene"], { move: string; keep: string[] }> = {
+  flirt: {
+    move: "给彼此留点余地，别把话说死，也别一次把情绪全倒出来。",
+    keep: ["先接住情绪，再表达自己", "让 TA 有台阶，也让自己有退路"],
+  },
+  work: {
+    move: "先把结论和时间点说清楚，再解释原因，别在语气上纠缠。",
+    keep: ["先给结论再解释", "把该谁做、什么时候做完说清楚"],
+  },
+  family: {
+    move: "先接情绪，等对方缓下来再谈这一件事，别翻旧账。",
+    keep: ["先接情绪，后谈事情", "只说这一件事"],
+  },
+  service: {
+    move: "先把能不能办、多久办完说清楚，别过度承诺。",
+    keep: ["先给可执行的答复", "做不到的部分要提前说"],
+  },
+  friend: {
+    move: "把感受直接说出来，别绕，也别让对方猜。",
+    keep: ["说感受，不判断人", "一次只聊一件事"],
+  },
+};
+
+function fallbackGuidance(
+  scene: AnalyzeRequest["scene"],
+  result: { subtext: string; emotion: string; intent: string; risk: string },
+): GuidanceInsight {
+  const hint = SCENE_HINT[scene] ?? SCENE_HINT.friend;
+  const direction = result.intent
+    ? `TA 这次的落点是：${result.intent} 顺着这一点回应就够了，不用把别的话题一起翻出来。${hint.move}`
+    : hint.move;
+
+  return {
+    read: `${result.subtext}${result.emotion ? `（${result.emotion}）` : ""}`,
+    direction,
+    keep: hint.keep,
+    avoid: result.risk,
+  };
+}
+
 function normalizeResult(
   value: unknown,
   scene: AnalyzeRequest["scene"],
@@ -464,10 +553,10 @@ function normalizeResult(
   const emotion = readString(value.emotion);
   const intent = readString(value.intent);
   const risk = readString(value.risk);
-  const thoughts = readString(value.thoughts).replace(
-    /^[（(]\s*内心\s*OS\s*[）)]\s*/i,
-    "",
-  );
+  const thoughts = readString(value.thoughts)
+    .replace(/^[（(]\s*内心\s*OS\s*[）)]\s*/i, "")
+    .replace(/^[（(]\s*/, "")
+    .replace(/\s*[）)]$/, "");
   const particles = normalizeParticles(value.particles) ?? [];
   const analysisConfidence = readString(value.analysisConfidence);
   const readings = normalizeReadings(value.readings);
@@ -535,6 +624,11 @@ function normalizeResult(
     return null;
   }
 
+  const guidance = normalizeGuidance(
+    value.guidance,
+    fallbackGuidance(scene, { subtext, emotion, intent, risk }),
+  );
+
   return {
     subtext,
     emotion,
@@ -550,6 +644,7 @@ function normalizeResult(
     nextLine,
     ...(affection ? { affection } : {}),
     ...(trust ? { trust } : {}),
+    guidance,
     replies: [gentle, humor, deadpan, straight],
   };
 }
@@ -586,7 +681,7 @@ export async function POST(request: Request) {
       const retryInstruction =
         attempt === 0
           ? ""
-          : `上一次输出没有通过结构校验。请重新只输出一个合法 JSON 对象，必须包含 subtext、emotion、intent、risk、thoughts、particles、analysisConfidence、2-3 条 readings、missingInfo、nextLine，以及按 gentle、humor、deadpan、straight 排列的 4 条 replies。用户提供了自己的话时还必须包含 myIntent。暧昧场景必须包含 affection，非暧昧场景必须包含 trust；暧昧场景每条回复带 0-20 的 affectionBonus。不要解释，不要 Markdown。`;
+          : `上一次输出没有通过结构校验。请重新只输出一个合法 JSON 对象，必须包含 subtext、emotion、intent、risk、thoughts、particles、analysisConfidence、2-3 条 readings、missingInfo、nextLine、guidance，以及按 gentle、humor、deadpan、straight 排列的 4 条 replies。用户提供了自己的话时还必须包含 myIntent。暧昧场景必须包含 affection，非暧昧场景必须包含 trust；暧昧场景每条回复带 0-20 的 affectionBonus。不要解释，不要 Markdown。`;
 
       const messages: ChatMessage[] = [
         { role: "system", content: SYSTEM_PROMPT },

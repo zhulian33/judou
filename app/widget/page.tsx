@@ -98,12 +98,6 @@ export default function WidgetPage() {
 
   const bondScore = result?.affection?.score ?? result?.trust?.score ?? 0;
   const tint = 0.015 + (bondScore / 100) * 0.22;
-  const compactReplies = result
-    ? (["gentle", "deadpan", "straight"] as const)
-        .map((style) => result.replies.find((reply) => reply.style === style))
-        .filter((reply): reply is NonNullable<typeof reply> => Boolean(reply))
-    : [];
-
   async function analyze() {
     if (!message.trim()) {
       setError("先把对方的话贴进来。");
@@ -267,11 +261,11 @@ export default function WidgetPage() {
             </aside>
 
             <div className="min-[620px]:col-start-2">
-            <div className="flex items-center justify-between">
+            <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-1 flex items-center justify-between bg-[#fbfbf9]/95 px-4 pb-2 pt-4 backdrop-blur">
               <button
                 type="button"
                 onClick={() => setMode("detail")}
-                className="text-[10px] text-ink-400 hover:text-ink-950"
+                className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[10px] text-ink-600 hover:text-ink-950"
               >
                 ← 回到黄历
               </button>
@@ -285,6 +279,12 @@ export default function WidgetPage() {
               onChange={(event) => setMessage(event.target.value)}
               rows={4}
               autoFocus
+              onFocus={(event) => {
+                const node = event.currentTarget;
+                window.setTimeout(() => {
+                  node.scrollIntoView({ block: "center", behavior: "smooth" });
+                }, 220);
+              }}
               placeholder="把对方的话放进来"
               className="mt-4 block w-full resize-none rounded-xl border border-black/10 bg-white px-3.5 py-3 text-[16px] leading-6 text-ink-900 outline-none focus:border-black/30"
             />
@@ -335,39 +335,42 @@ export default function WidgetPage() {
                     {result.nextLine.content}
                   </p>
                 </div>
-                {compactReplies.map((reply) => (
-                  <div
-                    key={reply.style}
-                    className="rounded-xl border border-black/10 bg-white p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[9px] font-semibold text-ink-400">
-                        {reply.label}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          copyReply(reply.content, reply.style)
-                        }
-                        aria-label={`复制${reply.label}`}
-                        className="flex items-center gap-1 text-[9px] text-ink-400 hover:text-ink-950"
-                      >
-                        {copied === reply.style ? (
-                          <>
-                            <CheckIcon className="h-3 w-3" /> 已复制
-                          </>
-                        ) : (
-                          <>
-                            <CopyIcon className="h-3 w-3" /> 复制
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="mt-1.5 text-[12px] leading-5 text-ink-900">
-                      {reply.content}
+                <div className="rounded-xl border border-black/10 bg-white p-3">
+                  <p className="text-[9px] font-semibold text-ink-400">
+                    指导方向
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-ink-800">
+                    {result.guidance?.read ?? result.intent}
+                  </p>
+                  <p className="mt-1.5 text-[11px] leading-5 text-ink-600">
+                    {result.guidance?.direction ??
+                      `先看清 TA 现在要的是什么，再决定要不要往下推。`}
+                  </p>
+                  <div className="mt-2 rounded-lg bg-cream-50 px-2.5 py-2">
+                    <p className="text-[9px] font-semibold text-ink-400">
+                      守住这几条
                     </p>
+                    <ul className="mt-1 space-y-0.5">
+                      {(
+                        result.guidance?.keep ?? [
+                          "先接住情绪，再谈事实",
+                          "一次只推进一件事",
+                        ]
+                      ).map((item) => (
+                        <li
+                          key={item}
+                          className="flex gap-1.5 text-[10px] leading-4 text-ink-700"
+                        >
+                          <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-ink-950/40" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                ))}
+                  <p className="mt-2 text-[10px] leading-4 text-ink-500">
+                    先别做：{result.guidance?.avoid ?? result.risk}
+                  </p>
+                </div>
               </div>
             ) : null}
             </div>
@@ -397,11 +400,11 @@ export default function WidgetPage() {
             </aside>
 
             <div className="min-[620px]:col-start-2">
-              <div className="flex items-center justify-between">
+              <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-1 flex items-center justify-between bg-[#fbfbf9]/95 px-4 pb-2 pt-4 backdrop-blur">
                 <button
                   type="button"
                   onClick={() => setMode("detail")}
-                  className="text-[10px] text-ink-400 hover:text-ink-950"
+                  className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[10px] text-ink-600 hover:text-ink-950"
                 >
                   ← 回到黄历
                 </button>
@@ -415,6 +418,12 @@ export default function WidgetPage() {
                 onChange={(event) => setOpenerIdea(event.target.value)}
                 rows={3}
                 autoFocus
+                onFocus={(event) => {
+                  const node = event.currentTarget;
+                  window.setTimeout(() => {
+                    node.scrollIntoView({ block: "center", behavior: "smooth" });
+                  }, 220);
+                }}
                 placeholder="你想找对方，是为了什么？比如：想约吃饭，但怕太直接。"
                 className="mt-4 block w-full resize-none rounded-xl border border-black/10 bg-white px-3.5 py-3 text-[16px] leading-6 text-ink-900 outline-none focus:border-black/30"
               />

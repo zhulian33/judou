@@ -152,6 +152,12 @@ ${req.message.trim()}
     "trend": "warming | steady | cooling",
     "note": "当前信任度/配合度和接下来怎么回更合适，1-2 句"
   },
+  "guidance": {
+    "read": "对方现在到底是什么状态、站在什么位置，1 句，最多 40 个汉字",
+    "direction": "接下来大方向该怎么走，1-2 句，只讲策略和分寸，不要写成可以直接发送的台词",
+    "keep": ["沟通时要守住的 1-3 条原则，每条 8-18 字，比如「先接住情绪，再谈事实」"],
+    "avoid": "现在最不该做的一件事，1 句，说清后果"
+  },
   "replies": [
     {
       "style": "gentle",
@@ -192,6 +198,11 @@ ${req.message.trim()}
 - replies 固定输出 4 条，按 gentle、humor、deadpan、straight 排列。界面会把 humor 和 deadpan 合并成一张幽默卡，但你必须分别输出。
 - 四种回复要使用不同策略：gentle 先接住再请求，humor 用轻松视角换个说法，deadpan 用冷幽默轻轻戳一下，straight 直接给态度和下一步。
 - 不要都用「好/行/收到」开头，也不要都以问句结尾；句式和长度要有区别。
+- guidance 是「给方向，不给台词」：说清对方心理、你该往哪走、要守住什么、别做什么。
+- guidance.read 写对方此刻的状态，不要重复 subtext。
+- guidance.direction 只讲策略：先做什么、后做什么、用什么姿态，禁止出现可以直接复制发送的整句回复。
+- guidance.keep 给 1-3 条，每条都是能立刻执行的原则，不要空话。
+- guidance.avoid 写一个具体的坑，不要写「注意语气」这类泛泛提醒。
 - affection 只在 scene=flirt 时输出；其他场景必须省略。
 - trust 只在非暧昧场景输出；暧昧场景必须省略。
 - affection.score 是 0-100 的整数。affection.trend 只能是 warming、steady、cooling。

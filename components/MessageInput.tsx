@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   ArrowUpRightIcon,
   ChevronDownIcon,
-  ImageIcon,
   SparkIcon,
 } from "@/components/Icons";
 import { EXAMPLE_MESSAGES, OPENER_EXAMPLES } from "@/lib/examples";
@@ -23,11 +22,6 @@ interface MessageInputProps {
   onMyWordsChange: (value: string) => void;
   onContextChange: (value: string) => void;
   onGenderChange: (value: Gender) => void;
-  onScreenshotImport: (payload: {
-    otherText: string;
-    myText?: string;
-    transcript: string;
-  }) => void;
   onAnalyze: () => void;
   onPickExample: (example: ExampleMessage) => void;
 }
@@ -44,22 +38,12 @@ export function MessageInput({
   onMyWordsChange,
   onContextChange,
   onGenderChange,
-  onScreenshotImport,
   onAnalyze,
   onPickExample,
 }: MessageInputProps) {
   const isOpener = mode === "opener";
   const [showContext, setShowContext] = useState(false);
   const [showGender, setShowGender] = useState(false);
-  const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrError, setOcrError] = useState<string | null>(null);
-  const [ocrDone, setOcrDone] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [ocrMessages, setOcrMessages] = useState<
-    Array<{ text: string; role: "other" | "me" }>
-  >([]);
-  const previewRef = useRef<string | null>(null);
-
   useEffect(() => {
     if (context) {
       setShowContext(true);
@@ -71,108 +55,6 @@ export function MessageInput({
       setShowGender(true);
     }
   }, [gender]);
-
-  useEffect(
-    () => () => {
-      if (previewRef.current) {
-        URL.revokeObjectURL(previewRef.current);
-      }
-    },
-    [],
-  );
-
-  function applyOcrMessages(
-    messages: Array<{ text: string; role: "other" | "me" }>,
-  ) {
-    const otherLines = messages
-      .filter((item) => item.role === "other")
-      .map((item) => item.text);
-    const myLines = messages
-      .filter((item) => item.role === "me")
-      .map((item) => item.text);
-    const otherText = otherLines.at(-1) ?? messages.at(-1)?.text ?? "";
-
-    onScreenshotImport({
-      otherText,
-      myText: myLines.join("\n") || undefined,
-      transcript: messages.map((item) => item.text).join("\n"),
-    });
-  }
-
-  async function handleScreenshot(file: File) {
-    setOcrLoading(true);
-    setOcrError(null);
-    setOcrDone(false);
-
-    if (previewRef.current) {
-      URL.revokeObjectURL(previewRef.current);
-    }
-    const preview = URL.createObjectURL(file);
-    previewRef.current = preview;
-    setPreviewUrl(preview);
-
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        body: formData,
-      });
-      const payload = (await response.json()) as
-        | {
-            text: string;
-            lines: string[];
-            blocks: Array<{
-              text: string;
-              left: number;
-              top: number;
-              width: number;
-            }>;
-          }
-        | { error: string };
-
-      if (!response.ok || "error" in payload) {
-        throw new Error(
-          "error" in payload ? payload.error : "截图识别失败。",
-        );
-      }
-
-      let imageWidth = 0;
-      try {
-        const bitmap = await createImageBitmap(file);
-        imageWidth = bitmap.width;
-        bitmap.close();
-      } catch {
-        imageWidth = 0;
-      }
-
-      const detected =
-        payload.blocks.length > 0
-          ? payload.blocks.map((block) => ({
-              text: block.text,
-              role:
-                imageWidth > 0 && block.left / imageWidth > 0.18
-                  ? ("me" as const)
-                  : ("other" as const),
-            }))
-          : payload.lines.map((text) => ({
-              text,
-              role: "other" as const,
-            }));
-
-      setOcrMessages(detected);
-      applyOcrMessages(detected);
-      setOcrDone(true);
-    } catch (requestError) {
-      setOcrError(
-        requestError instanceof Error
-          ? requestError.message
-          : "截图识别失败。",
-      );
-    } finally {
-      setOcrLoading(false);
-    }
-  }
 
   return (
     <form
@@ -214,6 +96,12 @@ export function MessageInput({
               ? "例如：想问问 TA 最近怎么样，但怕太突然。"
               : "例如：我最近有点忙，晚点再说吧。"
           }
+          onFocus={(event) => {
+            const node = event.currentTarget;
+            window.setTimeout(() => {
+              node.scrollIntoView({ block: "center", behavior: "smooth" });
+            }, 260);
+          }}
           aria-label={isOpener ? "想找对方说什么" : "要解读的消息"}
           className="block min-h-[132px] w-full resize-none bg-transparent px-4 py-4 text-[16px] leading-7 text-ink-950 outline-none placeholder:text-ink-400/65"
         />
@@ -250,118 +138,6 @@ export function MessageInput({
       </div>
       ) : null}
 
-      <div className="mt-3">
-        <label
-          htmlFor="chat-screenshot"
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            const file = event.dataTransfer.files?.[0];
-            if (file && !ocrLoading) {
-              void handleScreenshot(file);
-            }
-          }}
-          className={[
-            "flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-3.5 py-3 transition-colors",
-            ocrLoading
-              ? "cursor-wait border-ink-950/10 bg-cream-50"
-              : "border-ink-950/20 bg-cream-50 hover:border-ink-950/35 hover:bg-white",
-          ].join(" ")}
-        >
-          <input
-            id="chat-screenshot"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            disabled={ocrLoading}
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) {
-                void handleScreenshot(file);
-              }
-              event.target.value = "";
-            }}
-          />
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt="已上传的聊天截图"
-              className="h-11 w-11 shrink-0 rounded-lg border border-ink-950/10 object-cover"
-            />
-          ) : (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-ink-500">
-              <ImageIcon className="h-5 w-5" />
-            </span>
-          )}
-          <span className="min-w-0">
-            <span className="block text-[12px] font-medium text-ink-700">
-              {ocrLoading ? "正在识别截图…" : "上传聊天截图"}
-            </span>
-            <span className="mt-0.5 block text-[9px] leading-4 text-ink-400">
-              {ocrDone
-                ? "已识别，左侧按「对方」、右侧按「我」自动判断"
-                : "点击选择图片，也可以直接拖进来"}
-            </span>
-          </span>
-        </label>
-        {ocrMessages.length > 0 ? (
-          <div className="mt-2 rounded-xl border border-ink-950/10 bg-white px-3 py-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[9px] font-medium text-ink-400">
-                识别到 {ocrMessages.length} 段，点标签可改归属
-              </p>
-              <button
-                type="button"
-                onClick={() => applyOcrMessages(ocrMessages)}
-                className="text-[9px] font-medium text-ember-600 hover:text-ember-700"
-              >
-                按这版填入
-              </button>
-            </div>
-            <div className="mt-2 max-h-32 space-y-1.5 overflow-y-auto pr-1">
-              {ocrMessages.map((message, index) => (
-                <div
-                  key={`${message.text}-${index}`}
-                  className="flex items-start gap-2 text-[10px] leading-5"
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOcrMessages((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? {
-                                ...item,
-                                role:
-                                  item.role === "other" ? "me" : "other",
-                              }
-                            : item,
-                        ),
-                      )
-                    }
-                    className={`shrink-0 rounded-full px-2 py-0.5 ${
-                      message.role === "other"
-                        ? "bg-ink-950 text-white"
-                        : "bg-cream-100 text-ink-500"
-                    }`}
-                  >
-                    {message.role === "other" ? "对方" : "我"}
-                  </button>
-                  <span className="text-ink-600">{message.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {ocrError ? (
-          <p role="alert" className="mt-1.5 text-[10px] text-ink-500">
-            {ocrError}
-          </p>
-        ) : null}
-        <p className="mt-1 text-[9px] leading-4 text-ink-400">
-          截图只用于识别文字，不会保存；敏感聊天请先打码。
-        </p>
-      </div>
 
       <div className="mt-3">
         <button

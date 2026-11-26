@@ -62,7 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
       backing: .buffered,
       defer: false
     )
-    panel.title = "句读"
+    panel.title = "句读JUDOU"
     panel.titleVisibility = .hidden
     panel.titlebarAppearsTransparent = true
     panel.isMovableByWindowBackground = true
@@ -96,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     menu.addItem(NSMenuItem(title: "显示 / 隐藏", action: #selector(toggleWindow), keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "刷新黄历", action: #selector(reloadWidget), keyEquivalent: "r"))
     menu.addItem(.separator())
-    menu.addItem(NSMenuItem(title: "退出句读", action: #selector(quitApp), keyEquivalent: "q"))
+    menu.addItem(NSMenuItem(title: "退出句读JUDOU", action: #selector(quitApp), keyEquivalent: "q"))
     item.menu = menu
     statusItem = item
   }

@@ -7,7 +7,7 @@ import { ContactManager } from "@/components/ContactManager";
 import { MessageInput } from "@/components/MessageInput";
 import { OpenerResultCard } from "@/components/OpenerResultCard";
 import { ReadingDetails } from "@/components/ReadingDetails";
-import { ReplyOptions } from "@/components/ReplyOptions";
+import { GuidanceCard } from "@/components/GuidanceCard";
 import { ResultCard } from "@/components/ResultCard";
 import { SceneSelector } from "@/components/SceneSelector";
 import { ThoughtBubble } from "@/components/ThoughtBubble";
@@ -145,35 +145,6 @@ export default function Home() {
   function handleContextChange(value: string) {
     setContext(value);
     setError(null);
-  }
-
-  function handleScreenshotImport({
-    otherText,
-    myText,
-    transcript,
-  }: {
-    otherText: string;
-    myText?: string;
-    transcript: string;
-  }) {
-    setError(null);
-    setResult(null);
-    setOpenerResult(null);
-
-    if (mode === "opener") {
-      setContext((current) =>
-        [current.trim(), transcript.trim()].filter(Boolean).join("\n"),
-      );
-    } else {
-      setMessage(otherText);
-      if (myText) {
-        setContext((current) =>
-          [current.trim(), `我这边之前说：${myText}`]
-            .filter(Boolean)
-            .join("\n"),
-        );
-      }
-    }
   }
 
   function handleGenderChange(value: Gender) {
@@ -390,6 +361,12 @@ export default function Home() {
           </span>
         </a>
 
+        <a
+          href="/widget"
+          className="rounded-full border border-ink-950/12 bg-white/80 px-3.5 py-1.5 text-[11px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950"
+        >
+          返回黄历
+        </a>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-16 sm:px-7">
@@ -489,7 +466,6 @@ export default function Home() {
             onMyWordsChange={handleMyWordsChange}
             onContextChange={handleContextChange}
             onGenderChange={handleGenderChange}
-            onScreenshotImport={handleScreenshotImport}
             onAnalyze={handleAnalyze}
             onPickExample={handlePickExample}
           />
@@ -527,7 +503,7 @@ export default function Home() {
           ) : result ? (
             <>
               <ThoughtBubble result={result} />
-              <ReplyOptions result={result} />
+              <GuidanceCard result={result} />
               <ResultCard
                 result={result}
                 scene={scene}

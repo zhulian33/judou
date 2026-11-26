@@ -44,6 +44,13 @@ export interface ReadingHypothesis {
   likelihood: Confidence;
 }
 
+export interface GuidanceInsight {
+  read: string;
+  direction: string;
+  keep: string[];
+  avoid: string;
+}
+
 export interface MyIntentInsight {
   read: string;
   adjustment: string;
@@ -87,6 +94,7 @@ export interface AnalyzeResult {
   nextLine: NextLinePrediction;
   affection?: AffectionInsight;
   trust?: AffectionInsight;
+  guidance?: GuidanceInsight;
   replies: ReplyOption[];
 }
 
