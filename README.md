@@ -4,7 +4,7 @@
 
 一个移动端优先的 Web 工具：把对方的话贴进来，先拆清楚 TA 在想什么，再给你方向；配一个常驻桌面的电子黄历小组件，可以就着当天排盘问问题、也可以看两个人的合盘。
 
-**线上地址（阿里云函数计算 · 华东1）**：<https://judou-npcgkqkkln.cn-hangzhou.fcapp.run>
+**线上地址（阿里云 ECS · 华东1）**：<http://47.111.92.189>
 
 <p>
   <img src="preview/home-mobile.png" width="240" alt="主页" />
