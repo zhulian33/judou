@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && next build"
+    "check": "tsc --noEmit && next build",
+    "shots": "node scripts/capture-screenshots.mjs"
   },
   "dependencies": {
     "lunar-javascript": "^1.7.8",

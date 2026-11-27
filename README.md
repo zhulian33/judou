@@ -6,7 +6,8 @@
 
 <p>
   <img src="preview/home-mobile.png" width="240" alt="主页" />
-  <img src="preview/result-mobile.png" width="240" alt="解读结果" />
+  <img src="preview/summary-mobile.png" width="240" alt="提炼结果" />
+  <img src="preview/ask-mobile.png" width="240" alt="先知" />
   <img src="preview/widget.png" width="220" alt="桌面小组件" />
 </p>
 
@@ -65,7 +66,7 @@
 │   ├── summarizeDemo.ts        # 无模型时的提炼兜底
 │   └── rateLimit.ts            # 单实例内存限流
 ├── desktop-widget/             # macOS Swift + WKWebView 桌面端
-└── preview/                    # 界面截图
+└── preview/                    # 展示图（npm run shots 重新生成）
 ```
 
 数据流：

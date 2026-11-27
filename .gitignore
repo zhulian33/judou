@@ -27,3 +27,6 @@ yarn-error.log*
 desktop-widget/.build/
 # 打包产物，路径和签名都是本机的，用 build-app.sh 重新生成
 desktop-widget/*.app/
+
+# 截图脚本的临时 Chrome 配置
+.screenshot-profile
