@@ -4,6 +4,8 @@
 
 一个移动端优先的 Web 工具：把对方的话贴进来，先拆清楚 TA 在想什么，再给你方向；配一个常驻桌面的电子黄历小组件，可以就着当天排盘问问题、也可以看两个人的合盘。
 
+**线上地址（阿里云函数计算 · 华东1）**：<https://judou-npcgkqkkln.cn-hangzhou.fcapp.run>
+
 <p>
   <img src="preview/home-mobile.png" width="240" alt="主页" />
   <img src="preview/summary-mobile.png" width="240" alt="提炼结果" />
@@ -233,6 +235,14 @@ open "desktop-widget/句读JUDOU.app"
 ## 部署
 
 **阿里云（国内直连，推荐）**：函数计算 FC 或 ECS，完整步骤见 [`docs/阿里云部署.md`](docs/阿里云部署.md)。
+
+当前生产实例就是 FC：函数 `judou`，运行环境 **Node.js 22（Debian 12）**，启动命令 `./bootstrap`，监听 `9000`，
+触发器 `defaultTrigger` 为 **无需认证** 的 HTTP 触发器。改完代码更新线上：
+
+```bash
+sh scripts/pack-standalone.sh
+# 控制台 → 函数 judou → 代码 → 上传代码 → ZIP 包 → 选 judou-standalone.zip → 部署代码
+```
 
 ```bash
 sh scripts/pack-standalone.sh      # 产出 judou-standalone.zip（含 node_modules 和 bootstrap）
