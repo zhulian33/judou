@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
+import pkg from "@/package.json";
 import { getBuildId } from "@/lib/build";
 
 function appVersion(): string {
-  try {
-    const raw = readFileSync(path.join(process.cwd(), "package.json"), "utf8");
-    return (JSON.parse(raw) as { version?: string }).version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
+  return pkg.version ?? "0.0.0";
 }
 
 export const runtime = "nodejs";
