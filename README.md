@@ -149,9 +149,9 @@
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
-| `OPENAI_API_KEY` | 建议 | OpenAI 兼容接口的 Key；不填会退回公共模型（有限流，不稳定） |
-| `OPENAI_BASE_URL` | 否 | 默认 `https://api.openai.com/v1`，支持任何兼容 `/chat/completions` 的服务 |
-| `OPENAI_MODEL` | 否 | 默认 `gpt-4o-mini` |
+| `OPENAI_API_KEY` | 建议 | 模型 Key；国内推荐阿里云百炼（通义千问）的 Key，不填会退回公共模型（有限流，不稳定） |
+| `OPENAI_BASE_URL` | 否 | 默认 `https://api.openai.com/v1`；百炼用 `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `OPENAI_MODEL` | 否 | 默认 `gpt-4o-mini`；百炼可用 `qwen-plus` / `qwen-turbo` / `qwen-max` |
 | `PUBLIC_MODEL_URL` | 否 | 公共兜底模型地址，默认 `https://text.pollinations.ai/openai` |
 | `PUBLIC_MODEL_NAME` | 否 | 公共兜底模型名，默认 `openai` |
 
@@ -238,6 +238,14 @@ open "desktop-widget/句读JUDOU.app"
 
 当前生产实例就是 FC：函数 `judou`，运行环境 **Node.js 22（Debian 12）**，启动命令 `./bootstrap`，监听 `9000`，
 触发器 `defaultTrigger` 为 **无需认证** 的 HTTP 触发器。改完代码更新线上：
+
+线上模型走 **阿里云百炼 · 通义千问**（`qwen-plus`），通过百炼的 OpenAI 兼容接口调用，只改环境变量、不动代码：
+
+```
+OPENAI_BASE_URL = https://dashscope.aliyuncs.com/compatible-mode/v1
+OPENAI_MODEL    = qwen-plus
+OPENAI_API_KEY  = sk-（百炼 API-KEY）
+```
 
 ```bash
 sh scripts/pack-standalone.sh
