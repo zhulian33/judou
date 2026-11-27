@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "check": "tsc --noEmit && next build",
+    "pack": "sh scripts/pack-standalone.sh",
     "shots": "node scripts/capture-screenshots.mjs"
   },
   "dependencies": {

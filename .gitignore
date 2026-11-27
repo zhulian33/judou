@@ -30,3 +30,7 @@ desktop-widget/*.app/
 
 # 截图脚本的临时 Chrome 配置
 .screenshot-profile
+
+# 部署打包产物
+/dist-standalone
+/judou-standalone.zip

@@ -65,7 +65,6 @@
 │   ├── summarizePrompt.ts      # 提炼核心提示词
 │   ├── chart.ts                # 四柱 / 真太阳时 / 大运 / 合盘
 │   ├── places.ts               # 城市经度表
-│   ├── knowledge.ts            # 沟通框架知识库
 │   ├── summarizeDemo.ts        # 无模型时的提炼兜底
 │   └── rateLimit.ts            # 单实例内存限流
 ├── desktop-widget/             # macOS Swift + WKWebView 桌面端
@@ -120,6 +119,14 @@
 ```json
 { "ok": true, "build": "…", "time": "…", "model": "configured | public-fallback", "version": "1.0.0" }
 ```
+
+### `GET /api/config`
+
+```json
+{ "mode": "public | byok", "freeLimit": 5 }
+```
+
+前端用它判断要不要弹「模型设置」。
 
 限流：`summarize` 20 次 / 5 分钟 / IP，`ask` 30 次；超限返回 `429` + `Retry-After`。
 多实例部署时把 `lib/rateLimit.ts` 换成 Redis 实现即可。
@@ -225,14 +232,20 @@ open "desktop-widget/句读JUDOU.app"
 
 ## 部署
 
-**Vercel（推荐）**
+**阿里云（国内直连，推荐）**：函数计算 FC 或 ECS，完整步骤见 [`docs/阿里云部署.md`](docs/阿里云部署.md)。
 
-1. 推到 GitHub
-2. Vercel 导入仓库
-3. 配置 `OPENAI_API_KEY`（建议同时配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）
-4. 部署
+```bash
+sh scripts/pack-standalone.sh      # 产出 judou-standalone.zip（含 node_modules 和 bootstrap）
+```
 
-**自建**
+- **函数计算 FC**：Web 函数 → 自定义运行时 → 上传上面的 zip → 启动命令 `./bootstrap` → 端口 `9000`。
+  公网地址形如 `https://judou-xxxx.cn-hangzhou.fcapp.run`，不用域名、不用备案。
+- **ECS / 轻量**：解压到 `/opt/judou`，用 `deploy/judou.service` 托管，`deploy/nginx.conf` 反代 3000 端口。
+- **Docker**：`docker build -t judou . && docker run -p 3000:3000 -e OPENAI_API_KEY=... judou`
+
+**Vercel**：仓库导入即可构建，但 `*.vercel.app` 在国内网络常被污染，仅适合有代理的场景。
+
+**自建 / 本机**
 
 ```bash
 npm ci && npm run build
@@ -248,6 +261,7 @@ OPENAI_API_KEY=sk-... npm start   # 默认 3000 端口
 - [x] 消息 / 长文提炼（核心、温度、下一步）
 - [x] 桌面黄历小组件
 - [x] 真太阳时排盘 + 合盘
+- [x] 自带 Key（BYOK）+ 公共模式 + 限流 + 健康检查
 - [ ] 账号体系与云端同步（目前全部是本机 localStorage）
 - [ ] 浏览器插件：选中网页文字右键提炼
 - [ ] 多语言
