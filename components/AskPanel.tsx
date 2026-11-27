@@ -45,6 +45,7 @@ export function AskPanel({ scene }: { scene: Scene }) {
     save: saveModelPrefs,
     consumeFree,
     remaining: freeLeft,
+    mode: modelMode,
     needsKey,
     headers: modelHeaders,
   } = useModelKey();
@@ -413,9 +414,11 @@ export function AskPanel({ scene }: { scene: Scene }) {
 
       <div className="mt-2 flex items-center justify-between text-[10px] text-ink-400">
         <span>
-          {freeLeft > 0
-            ? `免费额度剩 ${freeLeft} 次`
-            : "免费额度已用完，需要自己的 Key"}
+          {modelMode === "public"
+            ? "公共模型 · 有限流"
+            : freeLeft > 0
+              ? `免费额度剩 ${freeLeft} 次`
+              : "免费额度已用完，需要自己的 Key"}
         </span>
         <button
           type="button"
@@ -506,6 +509,7 @@ export function AskPanel({ scene }: { scene: Scene }) {
         open={settingsOpen}
         prefs={modelPrefs}
         remaining={freeLeft}
+        mode={modelMode}
         onClose={() => setSettingsOpen(false)}
         onSave={saveModelPrefs}
       />

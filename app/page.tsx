@@ -41,6 +41,7 @@ export default function Home() {
     save: saveModelPrefs,
     consumeFree,
     remaining: freeLeft,
+    mode: modelMode,
     needsKey,
     headers: modelHeaders,
   } = useModelKey();
@@ -282,7 +283,9 @@ export default function Home() {
             onClick={() => setSettingsOpen(true)}
             className="rounded-full border border-ink-950/12 bg-white/80 px-3.5 py-1.5 text-[11px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950"
           >
-            模型设置{freeLeft > 0 ? ` · 剩 ${freeLeft} 次` : ""}
+            {modelMode === "byok" && freeLeft > 0
+              ? `模型设置 · 剩 ${freeLeft} 次`
+              : "模型设置"}
           </button>
           <a
             href="/widget"
@@ -434,6 +437,7 @@ export default function Home() {
         open={settingsOpen}
         prefs={modelPrefs}
         remaining={freeLeft}
+        mode={modelMode}
         onClose={() => setSettingsOpen(false)}
         onSave={saveModelPrefs}
       />

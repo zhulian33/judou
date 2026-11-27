@@ -8,6 +8,7 @@ interface ModelSettingsProps {
   open: boolean;
   prefs: ModelPrefs;
   remaining: number;
+  mode?: "byok" | "public";
   onClose: () => void;
   onSave: (patch: Partial<ModelPrefs>) => void;
 }
@@ -16,6 +17,7 @@ export function ModelSettings({
   open,
   prefs,
   remaining,
+  mode = "public",
   onClose,
   onSave,
 }: ModelSettingsProps) {
@@ -42,8 +44,9 @@ export function ModelSettings({
               模型设置
             </h2>
             <p className="mt-1 text-[11px] leading-4 text-ink-500">
-              免费额度 {FREE_LIMIT} 次，已用 {FREE_LIMIT - remaining} 次，
-              还剩 {remaining} 次。用完后填自己的 Key 继续。
+              {mode === "byok"
+                ? `免费额度 ${FREE_LIMIT} 次，已用 ${FREE_LIMIT - remaining} 次，还剩 ${remaining} 次。用完后填自己的 Key 继续。`
+                : "当前走公共模型（免费但有限流）。填自己的 Key 会更稳、更快。"}
             </p>
           </div>
           <button

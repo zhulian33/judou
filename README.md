@@ -124,7 +124,8 @@
 
 ## 额度与自带 Key（BYOK）
 
-- 每个浏览器默认 **5 次免费**（提炼 + 先知合计），计数存在本机 `localStorage`
+- 默认是**公共模式**：不配 `OPENAI_API_KEY` 时，所有请求走 `PUBLIC_MODEL_URL` 的免费模型（有限流，够演示）
+- 配上部署方 Key 后切到 **BYOK 模式**：每个浏览器 **5 次免费**（提炼 + 先知合计），计数存在本机 `localStorage`
 - 免费请求走部署方的 `OPENAI_API_KEY`；用完之后页面会弹出「模型设置」
 - 用户填自己的 Key 后，请求会带 `x-judou-key`（可选 `x-judou-base` / `x-judou-model`）头，服务端只用这一次、不落盘、不写日志
 - 没有部署方 Key 也没有用户 Key 时，退回公共兜底模型（有限流，仅够试用）

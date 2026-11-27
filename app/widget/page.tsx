@@ -72,6 +72,7 @@ export default function WidgetPage() {
     save: saveModelPrefs,
     consumeFree,
     remaining: freeLeft,
+    mode: modelMode,
     needsKey,
     headers: modelHeaders,
   } = useModelKey();
@@ -280,7 +281,7 @@ export default function WidgetPage() {
           onClick={() => setSettingsOpen(true)}
           className="text-[9px] text-ink-400 hover:text-ink-950"
         >
-          设置{freeLeft > 0 ? ` · 剩${freeLeft}` : ""}
+          {modelMode === "byok" && freeLeft > 0 ? `设置 · 剩${freeLeft}` : "设置"}
         </button>
         {!account && (
           <button
@@ -951,6 +952,7 @@ export default function WidgetPage() {
         open={settingsOpen}
         prefs={modelPrefs}
         remaining={freeLeft}
+        mode={modelMode}
         onClose={() => setSettingsOpen(false)}
         onSave={saveModelPrefs}
       />
