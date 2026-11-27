@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { resolveModel } from "@/lib/modelConfig";
 import { clientKey, rateLimit } from "@/lib/rateLimit";
 
 import { isValidDateString } from "@/lib/almanac";
@@ -23,41 +24,23 @@ function readString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getConfiguredKey(): string | undefined {
-  const key = process.env.OPENAI_API_KEY?.trim();
-  return key && key !== "your_key_here" ? key : undefined;
-}
 
-function getEndpoint(): string {
-  const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1")
-    .trim()
-    .replace(/\/+$/, "");
-  return base.endsWith("/chat/completions") ? base : `${base}/chat/completions`;
-}
 
-function getPublicEndpoint(): string {
-  return (
-    process.env.PUBLIC_MODEL_URL?.trim() ||
-    "https://text.pollinations.ai/openai"
-  );
-}
 
-async function askModel(request: AskRequest): Promise<AskResult | null> {
-  const key = getConfiguredKey();
+async function askModel(request: AskRequest, req: Request): Promise<AskResult | null> {
+  const model = resolveModel(req);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
 
   try {
-    const response = await fetch(key ? getEndpoint() : getPublicEndpoint(), {
+    const response = await fetch(model.endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+        ...(model.key ? { Authorization: `Bearer ${model.key}` } : {}),
       },
       body: JSON.stringify({
-        model: key
-          ? process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini"
-          : process.env.PUBLIC_MODEL_NAME?.trim() || "openai",
+        model: model.model,
         messages: [
           { role: "system", content: ASK_SYSTEM_PROMPT },
           { role: "user", content: buildAskPrompt(request) },
@@ -141,6 +124,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "请求格式不正确。" }, { status: 400 });
   }
 
+  const model = resolveModel(request);
   const question = readString(body.question);
   const scene = readString(body.scene);
   const date = readString(body.date);
@@ -231,7 +215,7 @@ export async function POST(request: Request) {
       : {}),
   };
 
-  const modeled = await askModel(payload);
+  const modeled = await askModel(payload, request);
   const base = modeled ?? buildAskDemo(payload);
   const chart = payload.birth ? buildChart(payload.birth) : null;
   const partnerChart = payload.partnerBirth
@@ -273,7 +257,7 @@ export async function POST(request: Request) {
   return NextResponse.json(result, {
     headers: {
       "Cache-Control": "no-store",
-      "X-Judou-Source": modeled ? "model" : "local",
+      "X-Judou-Source": modeled ? model.source : "local",
     },
   });
 }

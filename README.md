@@ -122,6 +122,15 @@
 
 ---
 
+## 额度与自带 Key（BYOK）
+
+- 每个浏览器默认 **5 次免费**（提炼 + 先知合计），计数存在本机 `localStorage`
+- 免费请求走部署方的 `OPENAI_API_KEY`；用完之后页面会弹出「模型设置」
+- 用户填自己的 Key 后，请求会带 `x-judou-key`（可选 `x-judou-base` / `x-judou-model`）头，服务端只用这一次、不落盘、不写日志
+- 没有部署方 Key 也没有用户 Key 时，退回公共兜底模型（有限流，仅够试用）
+
+> 5 次额度是前端计数，防君子不防小人；真要防刷，把计数换成 Upstash/KV 按 IP 计。
+
 ## 环境变量
 
 | 变量 | 必填 | 说明 |
@@ -131,6 +140,8 @@
 | `OPENAI_MODEL` | 否 | 默认 `gpt-4o-mini` |
 | `PUBLIC_MODEL_URL` | 否 | 公共兜底模型地址，默认 `https://text.pollinations.ai/openai` |
 | `PUBLIC_MODEL_NAME` | 否 | 公共兜底模型名，默认 `openai` |
+
+服务端解析顺序：**请求头里的用户 Key → 部署方 `OPENAI_API_KEY` → 公共兜底**。
 
 ```bash
 cp .env.example .env

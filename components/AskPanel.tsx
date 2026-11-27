@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 
 import { ArrowUpRightIcon } from "@/components/Icons";
+import { ModelSettings } from "@/components/ModelSettings";
 import { PLACES } from "@/lib/places";
+import { useModelKey } from "@/lib/useModelKey";
 import type { AskResult, Scene } from "@/lib/types";
 
 const PRESETS = [
@@ -37,6 +39,15 @@ export function AskPanel({ scene }: { scene: Scene }) {
   const [partnerGender, setPartnerGender] = useState("");
   const [showPartner, setShowPartner] = useState(false);
   const [focus, setFocus] = useState<"self" | "partner">("self");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const {
+    prefs: modelPrefs,
+    save: saveModelPrefs,
+    consumeFree,
+    remaining: freeLeft,
+    needsKey,
+    headers: modelHeaders,
+  } = useModelKey();
 
   useEffect(() => {
     try {
@@ -109,6 +120,11 @@ export function AskPanel({ scene }: { scene: Scene }) {
   }
 
   async function ask() {
+    if (needsKey) {
+      setSettingsOpen(true);
+      setError("免费次数用完了，填一个自己的 API Key 继续。");
+      return;
+    }
     if (!question.trim()) {
       setError("先写一句你想问的。");
       return;
@@ -121,7 +137,7 @@ export function AskPanel({ scene }: { scene: Scene }) {
     try {
       const response = await fetch("/api/ask", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...modelHeaders },
         body: JSON.stringify({
           question,
           scene,
@@ -168,6 +184,10 @@ export function AskPanel({ scene }: { scene: Scene }) {
         throw new Error("error" in payload ? payload.error : "没问出来。");
       }
 
+      const source = response.headers.get("X-Judou-Source");
+      if (source === "server" || source === "public") {
+        consumeFree();
+      }
       setResult(payload);
     } catch (requestError) {
       setError(
@@ -391,6 +411,21 @@ export function AskPanel({ scene }: { scene: Scene }) {
         </p>
       ) : null}
 
+      <div className="mt-2 flex items-center justify-between text-[10px] text-ink-400">
+        <span>
+          {freeLeft > 0
+            ? `免费额度剩 ${freeLeft} 次`
+            : "免费额度已用完，需要自己的 Key"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="underline decoration-ink-950/20 underline-offset-2 hover:text-ink-800"
+        >
+          模型设置
+        </button>
+      </div>
+
       {result ? (
         <div className="mt-4 space-y-3">
           <div className="rounded-2xl border border-ink-950/10 bg-white p-4">
@@ -466,6 +501,14 @@ export function AskPanel({ scene }: { scene: Scene }) {
           </div>
         </div>
       ) : null}
+
+      <ModelSettings
+        open={settingsOpen}
+        prefs={modelPrefs}
+        remaining={freeLeft}
+        onClose={() => setSettingsOpen(false)}
+        onSave={saveModelPrefs}
+      />
     </div>
   );
 }

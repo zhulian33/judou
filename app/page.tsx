@@ -6,7 +6,9 @@ import { BrandMark, SparkIcon } from "@/components/Icons";
 import { ContactManager } from "@/components/ContactManager";
 import { MessageInput } from "@/components/MessageInput";
 import { AskPanel } from "@/components/AskPanel";
+import { ModelSettings } from "@/components/ModelSettings";
 import { SummaryCard } from "@/components/SummaryCard";
+import { useModelKey } from "@/lib/useModelKey";
 import { SceneSelector } from "@/components/SceneSelector";
 import type { ContactDraft } from "@/lib/contacts";
 import {
@@ -33,6 +35,15 @@ export default function Home() {
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([]);
   const [summary, setSummary] = useState<SummaryResult | null>(null);
   const [summarizing, setSummarizing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const {
+    prefs: modelPrefs,
+    save: saveModelPrefs,
+    consumeFree,
+    remaining: freeLeft,
+    needsKey,
+    headers: modelHeaders,
+  } = useModelKey();
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const appliedContactIdRef = useRef<string | null>(null);
@@ -116,6 +127,11 @@ export default function Home() {
   }
 
   async function handleSummarize() {
+    if (needsKey) {
+      setSettingsOpen(true);
+      setError("免费次数用完了，填一个自己的 API Key 继续。");
+      return;
+    }
     if (message.trim().length < 20) {
       setError("先把那段话贴进来，20 字以上我才好拆。");
       return;
@@ -127,7 +143,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/summarize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...modelHeaders },
         body: JSON.stringify({ text: message, scene }),
       });
       const payload = (await response.json()) as SummaryResult | { error: string };
@@ -136,6 +152,10 @@ export default function Home() {
         throw new Error("error" in payload ? payload.error : "没拆出来。");
       }
 
+      const source = response.headers.get("X-Judou-Source");
+      if (source === "server" || source === "public") {
+        consumeFree();
+      }
       setSummary(payload);
       remember("reply", `${payload.core}｜${payload.meaning}`);
       window.setTimeout(() => {
@@ -256,12 +276,21 @@ export default function Home() {
           </span>
         </a>
 
-        <a
-          href="/widget"
-          className="rounded-full border border-ink-950/12 bg-white/80 px-3.5 py-1.5 text-[11px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950"
-        >
-          返回黄历
-        </a>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="rounded-full border border-ink-950/12 bg-white/80 px-3.5 py-1.5 text-[11px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950"
+          >
+            模型设置{freeLeft > 0 ? ` · 剩 ${freeLeft} 次` : ""}
+          </button>
+          <a
+            href="/widget"
+            className="rounded-full border border-ink-950/12 bg-white/80 px-3.5 py-1.5 text-[11px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950"
+          >
+            返回黄历
+          </a>
+        </div>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-16 sm:px-7">
@@ -400,6 +429,14 @@ export default function Home() {
         </div>
         </div>
       </main>
+
+      <ModelSettings
+        open={settingsOpen}
+        prefs={modelPrefs}
+        remaining={freeLeft}
+        onClose={() => setSettingsOpen(false)}
+        onSave={saveModelPrefs}
+      />
     </div>
   );
 }

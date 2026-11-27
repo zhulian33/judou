@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ModelSettings } from "@/components/ModelSettings";
 import { RegisterDialog } from "@/components/RegisterDialog";
 import { SummaryCard } from "@/components/SummaryCard";
 import { useAccount } from "@/lib/useAccount";
 import { PLACES } from "@/lib/places";
+import { useModelKey } from "@/lib/useModelKey";
 import type {
   AlmanacData,
   AskResult,
@@ -64,6 +66,15 @@ export default function WidgetPage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { account, register } = useAccount();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const {
+    prefs: modelPrefs,
+    save: saveModelPrefs,
+    consumeFree,
+    remaining: freeLeft,
+    needsKey,
+    headers: modelHeaders,
+  } = useModelKey();
 
   useEffect(() => {
     try {
@@ -143,6 +154,11 @@ export default function WidgetPage() {
 
   const tint = 0.04;
   async function summarize() {
+    if (needsKey) {
+      setSettingsOpen(true);
+      setSummaryError("免费次数用完了，填一个自己的 API Key 继续。");
+      return;
+    }
     if (message.trim().length < 20) {
       setSummaryError("先把那段话贴进来，20 字以上才好拆。");
       return;
@@ -154,7 +170,7 @@ export default function WidgetPage() {
     try {
       const response = await fetch("/api/summarize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...modelHeaders },
         body: JSON.stringify({ text: message, scene }),
       });
       const payload = (await response.json()) as SummaryResult | { error: string };
@@ -163,6 +179,10 @@ export default function WidgetPage() {
         throw new Error("error" in payload ? payload.error : "没拆出来。");
       }
 
+      const source = response.headers.get("X-Judou-Source");
+      if (source === "server" || source === "public") {
+        consumeFree();
+      }
       setSummary(payload);
     } catch (requestError) {
       setSummaryError(
@@ -174,6 +194,11 @@ export default function WidgetPage() {
   }
 
   async function askAlmanac() {
+    if (needsKey) {
+      setSettingsOpen(true);
+      setAskError("免费次数用完了，填一个自己的 API Key 继续。");
+      return;
+    }
     if (!question.trim()) {
       setAskError("先写一句你想问的。");
       return;
@@ -186,7 +211,7 @@ export default function WidgetPage() {
     try {
       const response = await fetch("/api/ask", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...modelHeaders },
         body: JSON.stringify({
           question,
           scene,
@@ -233,6 +258,10 @@ export default function WidgetPage() {
         throw new Error("error" in payload ? payload.error : "没查出来。");
       }
 
+      const source = response.headers.get("X-Judou-Source");
+      if (source === "server" || source === "public") {
+        consumeFree();
+      }
       setAskResult(payload);
     } catch (requestError) {
       setAskError(
@@ -246,6 +275,13 @@ export default function WidgetPage() {
   function headerActions() {
     return (
       <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="text-[9px] text-ink-400 hover:text-ink-950"
+        >
+          设置{freeLeft > 0 ? ` · 剩${freeLeft}` : ""}
+        </button>
         {!account && (
           <button
             type="button"
@@ -909,6 +945,14 @@ export default function WidgetPage() {
         open={registerOpen}
         onClose={() => setRegisterOpen(false)}
         onRegister={register}
+      />
+
+      <ModelSettings
+        open={settingsOpen}
+        prefs={modelPrefs}
+        remaining={freeLeft}
+        onClose={() => setSettingsOpen(false)}
+        onSave={saveModelPrefs}
       />
     </main>
   );
