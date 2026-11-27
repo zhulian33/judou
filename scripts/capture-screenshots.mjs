@@ -22,6 +22,9 @@ const CHROME =
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const CDP_PORT = Number(process.env.CDP_PORT || 9421);
 
+const ENGLISH_TEXT =
+  "These figures had fallen to 2 and 5 W, respectively. Despite this decline, Australia remained considerably higher than Canada. Overall, the chart compares four countries over a ten-year period.";
+
 const LONG_TEXT =
   "她好像对我开始冷了 就是好像她觉得影响到她了 现在连正常微信聊天都会有点冷了…我感觉到她在刻意保持距离 接下来我不知道该如何了 因为我想着还是朋友的 只是感觉她好像有点被我压力到了 可是我真的也没做啥 也可能是她本身忙 我今天不小心刷到她动态了 我真的没有想到她其实很敏感很内耗 甚至我觉得我没有办法太托住她的情绪 我也大概了解为什么你说我们两个都很像了 确实 一样高敏 一样喜欢狗 一样有的时候很悲观 一样防备心重";
 
@@ -165,6 +168,35 @@ async function main() {
     `);
     await sleep(14000);
     await cdp.shot("summary-mobile.png", { width: 430, height: 932 });
+
+    // 2.1 英文原文 + 双语切换
+    await cdp.evaluate(`
+      (() => {
+        const ta = document.querySelector('textarea');
+        const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+        set.call(ta, ${JSON.stringify("ENGLISH_TEXT_PLACEHOLDER")});
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
+      })()
+    `.replace('"ENGLISH_TEXT_PLACEHOLDER"', JSON.stringify(ENGLISH_TEXT)));
+    await sleep(500);
+    await cdp.evaluate(`
+      (() => {
+        const btn = [...document.querySelectorAll('button')].find((b) => b.textContent.includes('提炼这段') || b.textContent.includes('重新提炼'));
+        btn?.click();
+        return !!btn;
+      })()
+    `);
+    await sleep(14000);
+    await cdp.evaluate(`
+      (() => {
+        const btn = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'EN');
+        btn?.click();
+        return !!btn;
+      })()
+    `);
+    await sleep(600);
+    await cdp.shot("summary-en-mobile.png", { width: 430, height: 932 });
 
     // 3. 先知（带生辰与合盘）
     await cdp.evaluate(`

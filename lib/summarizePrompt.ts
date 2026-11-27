@@ -11,8 +11,12 @@ export const SUMMARY_SYSTEM_PROMPT = `你是「句读」里负责拆长消息的
 4. 先判断这段话是谁说的：
    - 如果是对方发来的原话：meaning 写「TA 真正想表达什么」。
    - 如果是用户自己在叙述、纠结、吐槽：meaning 写「这段关系真正卡在哪」，不要硬说成是 TA 说的。
-5. 只输出 JSON：
-   {"subject": "...", "core": "...", "points": ["..."], "meaning": "...", "temperature": "...", "advice": "...", "moves": ["..."], "avoid": "...", "missing": "..."}
+5. 语言规则（重要）：
+   - 主字段（core/points/meaning/temperature/advice/moves/avoid/missing）一律用**简体中文**写，方便中文用户读；
+   - 如果原文是**英文**或者中英混排，再加一个 en 对象，把这些字段用**英文重写一遍**：{"core":"…","points":["…"],"meaning":"…","temperature":"…","advice":"…","moves":["…"],"avoid":"…","missing":"…"}；
+   - 原文是纯中文时，不要输出 en。
+6. 只输出 JSON：
+   {"subject": "...", "core": "...", "points": ["..."], "meaning": "...", "temperature": "...", "advice": "...", "moves": ["..."], "avoid": "...", "missing": "...", "en": { ... 可选 ... }}
    subject：这段话在说谁，只能填「在说你自己」「在说 TA 自己」「在说别人」三者之一；
    core：一句话说清这段在讲什么，30 个汉字以内，主语必须明确（谁对谁）；
    points：2-4 条，每条 24 字以内，只写事实和可验证的判断，不写抒情；

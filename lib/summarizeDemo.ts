@@ -17,6 +17,13 @@ function splitSentences(text: string): string[] {
     .filter((item) => item.length > 2);
 }
 
+/** 判断原文是不是英文为主（>=20 个字母且中文字符少）。 */
+export function looksEnglish(text: string): boolean {
+  const letters = (text.match(/[A-Za-z]/g) ?? []).length;
+  const cjk = (text.match(/[\u4e00-\u9fa5]/g) ?? []).length;
+  return letters >= 20 && letters > cjk * 2;
+}
+
 /** 没有模型时，用句子切分 + 关键词兜一个能看的结果。 */
 export function buildSummaryDemo(req: SummaryRequest): SummaryResult {
   const text = req.text.trim();
@@ -42,6 +49,33 @@ export function buildSummaryDemo(req: SummaryRequest): SummaryResult {
 
   const cooling = /冷|距离|疏远/.test(text);
   const pressured = /压力|压到|有负担/.test(text);
+
+  if (looksEnglish(text)) {
+    const enSentences = splitSentences(text).slice(0, 4);
+    return {
+      subject: "在说别人",
+      core: enSentences[0]?.slice(0, 80) ?? "This passage needs a closer read.",
+      points: enSentences.map((item) => item.slice(0, 70)),
+      meaning:
+        "This is an English passage; the model is busy, so only the key sentences are pulled out.",
+      temperature: "Not applicable — this looks like an article or homework text.",
+      advice: "Read the pulled sentences first; retry in a moment for a full bilingual breakdown.",
+      moves: ["Mark the topic sentence", "Underline the numbers and how they change"],
+      avoid: "Do not treat it as a message from someone you know.",
+      missing: "Who this text is for, and what you need it for.",
+      en: {
+        core: enSentences[0]?.slice(0, 80) ?? "This passage needs a closer read.",
+        points: enSentences.map((item) => item.slice(0, 70)),
+        meaning:
+          "This is an English passage; the model is busy, so only the key sentences are pulled out.",
+        temperature: "Not applicable — this looks like an article or homework text.",
+        advice: "Read the pulled sentences first; retry in a moment for a full bilingual breakdown.",
+        moves: ["Mark the topic sentence", "Underline the numbers and how they change"],
+        avoid: "Do not treat it as a message from someone you know.",
+        missing: "Who this text is for, and what you need it for.",
+      },
+    };
+  }
 
   return {
     subject,

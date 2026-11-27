@@ -20,10 +20,10 @@ export const SCENE_OPTIONS: SceneOption[] = [
     hint: "接住关心，划清边界",
   },
   {
-    id: "service",
-    label: "客服",
-    eyebrow: "SERVICE",
-    hint: "不被话术绕进去",
+    id: "study",
+    label: "学习",
+    eyebrow: "STUDY",
+    hint: "把知识和作业讲清楚",
   },
   {
     id: "friend",

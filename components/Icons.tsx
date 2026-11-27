@@ -270,18 +270,18 @@ export function SceneIcon({
     );
   }
 
-  if (scene === "service") {
+  if (scene === "study") {
     return (
       <svg {...commonProps}>
         <path
-          d="M5 12a7 7 0 0 1 14 0v4.4a2.4 2.4 0 0 1-2.4 2.4h-2.2M5 12v3.2h2.4v-3.2H5Zm14 0v3.2h-2.4v-3.2H19Z"
+          d="M12 6.5 5 9.5v8l7 3 7-3v-8l-7-3Z"
           stroke="currentColor"
           strokeWidth="1.7"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
-          d="M14.4 18.8h.1"
+          d="M12 10.5v10M5 9.5l7 3 7-3"
           stroke="currentColor"
           strokeWidth="2.2"
           strokeLinecap="round"

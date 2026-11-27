@@ -19,7 +19,7 @@ const SCENE_LABEL: Record<Scene, string> = {
   flirt: "暧昧",
   work: "职场",
   family: "家庭",
-  service: "客服",
+  study: "学习",
   friend: "朋友",
 };
 

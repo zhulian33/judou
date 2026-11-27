@@ -100,6 +100,26 @@ async function summarize(req: SummaryRequest, request: Request): Promise<Summary
       return null;
     }
 
+    const rawEn = isRecord(parsed.en) ? parsed.en : null;
+    const enCore = rawEn ? readString(rawEn.core) : "";
+    const enPoints = rawEn && Array.isArray(rawEn.points)
+      ? rawEn.points.map((item) => readString(item)).filter(Boolean).slice(0, 4)
+      : [];
+    const en = rawEn && enCore && enPoints.length > 0
+      ? {
+          core: enCore,
+          points: enPoints,
+          meaning: readString(rawEn.meaning),
+          advice: readString(rawEn.advice),
+          ...(readString(rawEn.temperature) ? { temperature: readString(rawEn.temperature) } : {}),
+          ...(Array.isArray(rawEn.moves)
+            ? { moves: rawEn.moves.map((item) => readString(item)).filter(Boolean).slice(0, 3) }
+            : {}),
+          ...(readString(rawEn.avoid) ? { avoid: readString(rawEn.avoid) } : {}),
+          ...(readString(rawEn.missing) ? { missing: readString(rawEn.missing) } : {}),
+        }
+      : null;
+
     return {
       ...(subject ? { subject } : {}),
       core,
@@ -110,6 +130,7 @@ async function summarize(req: SummaryRequest, request: Request): Promise<Summary
       ...(moves.length > 0 ? { moves } : {}),
       ...(avoid ? { avoid } : {}),
       ...(missing ? { missing } : {}),
+      ...(en ? { en } : {}),
     };
   } catch (error) {
     console.error("[句读] summarize failed:", error);

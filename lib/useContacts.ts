@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   createContactRecord,
+  normalizeScene,
   type Contact,
   type ContactDraft,
 } from "@/lib/contacts";
@@ -35,6 +36,7 @@ function readStoredContacts(): StoredContacts {
             typeof item.id === "string" &&
             typeof item.name === "string",
         )
+          .map((item) => ({ ...item, scene: normalizeScene(item.scene) }))
       : [];
     const activeId = contacts.some((item) => item.id === parsed.activeId)
       ? (parsed.activeId ?? null)

@@ -19,7 +19,7 @@ const SCENES: Array<{ id: Scene; label: string }> = [
   { id: "flirt", label: "暧昧" },
   { id: "work", label: "职场" },
   { id: "family", label: "家庭" },
-  { id: "service", label: "客服" },
+  { id: "study", label: "学习" },
   { id: "friend", label: "朋友" },
 ];
 

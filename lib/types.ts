@@ -1,4 +1,4 @@
-export const SCENES = ["flirt", "work", "family", "service", "friend"] as const;
+export const SCENES = ["flirt", "work", "family", "study", "friend"] as const;
 export type Scene = (typeof SCENES)[number];
 
 export type Gender = "unknown" | "female" | "male";
@@ -84,6 +84,17 @@ export interface SummaryRequest {
   scene?: Scene;
 }
 
+export interface SummaryTranslation {
+  core: string;
+  points: string[];
+  meaning: string;
+  temperature?: string;
+  advice: string;
+  moves?: string[];
+  avoid?: string;
+  missing?: string;
+}
+
 export interface SummaryResult {
   /** 这段话在说谁 */
   subject?: string;
@@ -103,6 +114,8 @@ export interface SummaryResult {
   avoid?: string;
   /** 还缺什么信息 / 哪里不确定 */
   missing?: string;
+  /** 原文是英文（或中英混排）时，附一份英文版 */
+  en?: SummaryTranslation;
 }
 
 export interface SceneOption {

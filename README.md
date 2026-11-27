@@ -7,6 +7,7 @@
 <p>
   <img src="preview/home-mobile.png" width="240" alt="主页" />
   <img src="preview/summary-mobile.png" width="240" alt="提炼结果" />
+  <img src="preview/summary-en-mobile.png" width="240" alt="英文双语提炼" />
   <img src="preview/ask-mobile.png" width="240" alt="先知" />
   <img src="preview/widget.png" width="220" alt="桌面小组件" />
 </p>
@@ -25,6 +26,8 @@
 - 你现在可以做：1 句总方向 + 2–3 条具体动作（写动作，不写台词）
 - 先别做什么：现在最不该踩的坑
 - 认清对象：先判断这段在说谁——说你 / 说 TA 自己 / 说别人；你自己在讲整件事时也会切换口吻
+- 中英双语：贴英文原文（作业、邮件、文章）时，会同时给中文和英文两版，右上角「中 / EN」一键切换
+- 场景：暧昧 / 职场 / 家庭 / **学习** / 朋友
 
 **先知（排盘问答）**
 

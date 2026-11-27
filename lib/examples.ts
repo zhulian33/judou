@@ -19,9 +19,11 @@ export const EXAMPLE_MESSAGES: ExampleMessage[] = [
     message: "你看看别人家的孩子，再看看你。",
   },
   {
-    scene: "service",
-    label: "标准话术",
-    message: "亲，这个问题我们这边处理不了哦，您再想想办法呢～",
+    scene: "study",
+    label: "英文作业",
+    message:
+      "These figures had fallen to 2 and 5 W, respectively. Despite this decline, Australia remained considerably higher than Canada.",
+    context: "雅思小作文，描述柱状图趋势。",
   },
   {
     scene: "friend",

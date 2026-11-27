@@ -1,3 +1,4 @@
+import { isScene } from "@/lib/scenes";
 import type { Gender, Scene } from "@/lib/types";
 
 export interface Contact {
@@ -18,6 +19,12 @@ export const EMPTY_CONTACT_DRAFT: ContactDraft = {
   scene: "flirt",
   notes: "",
 };
+
+/** 老数据里的「客服」场景已经下线，读的时候统一迁到「学习」。 */
+export function normalizeScene(value: unknown): Scene {
+  if (value === "service") return "study";
+  return isScene(value) ? value : "flirt";
+}
 
 export function getContactLabel(contact: Contact): string {
   return contact.name.trim() || "未命名对象";
