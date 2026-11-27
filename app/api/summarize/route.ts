@@ -104,6 +104,11 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
     const meaning = readString(parsed.meaning);
     const advice = readString(parsed.advice);
     const missing = readString(parsed.missing);
+    const temperature = readString(parsed.temperature);
+    const avoid = readString(parsed.avoid);
+    const moves = Array.isArray(parsed.moves)
+      ? parsed.moves.map((item) => readString(item)).filter(Boolean).slice(0, 3)
+      : [];
     const points = Array.isArray(parsed.points)
       ? parsed.points.map((item) => readString(item)).filter(Boolean).slice(0, 4)
       : [];
@@ -118,6 +123,9 @@ async function summarize(req: SummaryRequest): Promise<SummaryResult | null> {
       points,
       meaning,
       advice,
+      ...(temperature ? { temperature } : {}),
+      ...(moves.length > 0 ? { moves } : {}),
+      ...(avoid ? { avoid } : {}),
       ...(missing ? { missing } : {}),
     };
   } catch (error) {

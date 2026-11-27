@@ -14,15 +14,16 @@
 
 ## 功能
 
-**回一句（消息解读）**
+**提炼（一条消息 / 一整段话）**
 
-- 先提取核心：长消息 / 一大段吐槽 → 一句话核心 + 2–4 条事实 + 真正的问题 + 还不确定什么 + 你现在可以做
-- 内心 OS：用 TA 的第一人称还原那句话背后在想什么
-- 下一句预测：结合场景给最可能的回应，标可信度
-- 指导方向：TA 的落点、你该往哪走、要守住什么、先别做什么（只给方向，不写现成台词）
-- 多假设：2–3 种可能 + 各自的判断依据
-- 认清对象：先判断 TA 在说谁——说你 / 说 TA 自己 / 说别人；也是在讲整件事时自动切换口吻
-- 撤退信号：`别聊了` `算了` `随便你` 默认读成嫌烦/想收场，不硬解释成「在关心你」
+- 一句话核心：30 字内说清这段到底在讲什么
+- 2–4 条关键事实：压掉重复、抱怨和无效信息
+- 真正的问题：这段里卡住的到底是什么
+- TA 现在的温度：态度是冷、是犹豫、还是只是忙
+- 还不确定什么：明确指出读不懂、需要补一句的地方
+- 你现在可以做：1 句总方向 + 2–3 条具体动作（写动作，不写台词）
+- 先别做什么：现在最不该踩的坑
+- 认清对象：先判断这段在说谁——说你 / 说 TA 自己 / 说别人；你自己在讲整件事时也会切换口吻
 
 **先知（排盘问答）**
 
@@ -50,22 +51,18 @@
 │   ├── widget/page.tsx         # 桌面小组件的黄历视图
 │   ├── layout.tsx
 │   └── api/
-│       ├── analyze/route.ts    # 消息解读（结构化 JSON）
-│       ├── summarize/route.ts  # 长文提取核心
+│       ├── summarize/route.ts  # 提炼核心（结构化 JSON）
 │       ├── ask/route.ts        # 排盘问答（可带双人合盘）
 │       ├── almanac/route.ts    # 当天/指定日期黄历
 │       └── health/route.ts     # 健康检查
-├── components/                 # MessageInput / SummaryCard / GuidanceCard / AskPanel ...
+├── components/                 # MessageInput / SummaryCard / AskPanel ...
 ├── lib/
-│   ├── prompt.ts               # 解读提示词（含 few-shot、人称与边界规则）
 │   ├── askPrompt.ts            # 排盘问答提示词
-│   ├── summarizePrompt.ts      # 提取核心提示词
+│   ├── summarizePrompt.ts      # 提炼核心提示词
 │   ├── chart.ts                # 四柱 / 真太阳时 / 大运 / 合盘
 │   ├── places.ts               # 城市经度表
 │   ├── knowledge.ts            # 沟通框架知识库
-│   ├── guidance.ts             # 没有模型时的方向兜底
-│   ├── demo*.ts                # 无模型时的本地规则结果
-│   ├── safety.ts               # 内容安全过滤
+│   ├── summarizeDemo.ts        # 无模型时的提炼兜底
 │   └── rateLimit.ts            # 单实例内存限流
 ├── desktop-widget/             # macOS Swift + WKWebView 桌面端
 └── preview/                    # 界面截图
@@ -74,7 +71,7 @@
 数据流：
 
 ```
-输入 → /api/{analyze|summarize|ask}
+输入 → /api/{summarize|ask}
      → buildPrompt（规则 + few-shot + 知识库 + 当天排盘）
      → OpenAI 兼容接口（或本地规则兜底）
      → 结构校验 / 字段归一
@@ -88,21 +85,6 @@
 ## API
 
 所有接口都是 `POST`（`/api/almanac`、`/api/health` 为 `GET`），返回 JSON，错误统一为 `{ "error": "..." }`。
-
-### `POST /api/analyze`
-
-```json
-{
-  "message": "我们还是别聊了。",
-  "scene": "flirt",
-  "myWords": "我想说我还在意",
-  "context": "连续聊了两周",
-  "gender": "unknown",
-  "contactName": "小林"
-}
-```
-
-返回：`subtext` `emotion` `intent` `risk` `thoughts` `particles` `readings` `missingInfo` `nextLine` `guidance` `subject` `framing`，以及 `affection`（暧昧）或 `trust`（非暧昧）。
 
 ### `POST /api/summarize`
 
@@ -135,7 +117,7 @@
 { "ok": true, "build": "…", "time": "…", "model": "configured | public-fallback", "version": "1.0.0" }
 ```
 
-限流：`analyze` 20 次 / 5 分钟 / IP，`summarize` 20 次，`ask` 30 次；超限返回 `429` + `Retry-After`。
+限流：`summarize` 20 次 / 5 分钟 / IP，`ask` 30 次；超限返回 `429` + `Retry-After`。
 多实例部署时把 `lib/rateLimit.ts` 换成 Redis 实现即可。
 
 ---
@@ -247,12 +229,11 @@ OPENAI_API_KEY=sk-... npm start   # 默认 3000 端口
 
 ## Roadmap
 
-- [x] 消息解读 + 指导方向
-- [x] 长文提取核心
+- [x] 消息 / 长文提炼（核心、温度、下一步）
 - [x] 桌面黄历小组件
 - [x] 真太阳时排盘 + 合盘
 - [ ] 账号体系与云端同步（目前全部是本机 localStorage）
-- [ ] 浏览器插件：选中网页文字右键解读
+- [ ] 浏览器插件：选中网页文字右键提炼
 - [ ] 多语言
 
 ## License

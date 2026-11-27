@@ -1,67 +1,7 @@
 export const SCENES = ["flirt", "work", "family", "service", "friend"] as const;
 export type Scene = (typeof SCENES)[number];
 
-export const REPLY_STYLES = ["gentle", "humor", "deadpan", "straight"] as const;
-export type ReplyStyle = (typeof REPLY_STYLES)[number];
-
-export type Confidence = "high" | "medium" | "low";
-export type AffectionTrend = "warming" | "steady" | "cooling";
 export type Gender = "unknown" | "female" | "male";
-
-export interface AnalyzeRequest {
-  message: string;
-  scene: Scene;
-  myWords?: string;
-  context?: string;
-  memory?: string;
-  gender?: Gender;
-  contactName?: string;
-}
-
-export interface ReplyOption {
-  style: ReplyStyle;
-  label: string;
-  content: string;
-  affectionBonus?: number;
-  whyItWorks?: string;
-}
-
-export interface NextLinePrediction {
-  content: string;
-  confidence: Confidence;
-  reason: string;
-}
-
-export interface AffectionInsight {
-  score: number;
-  trend: AffectionTrend;
-  note: string;
-}
-
-export interface ReadingHypothesis {
-  title: string;
-  explanation: string;
-  likelihood: Confidence;
-}
-
-export interface SubjectInsight {
-  /** me = 在说你；self = 在说 TA 自己；third = 在说第三方 */
-  who: "me" | "self" | "third";
-  /** 人话标签，如「TA 在说别人」 */
-  label: string;
-}
-
-export interface GuidanceInsight {
-  read: string;
-  direction: string;
-  keep: string[];
-  avoid: string;
-}
-
-export interface MyIntentInsight {
-  read: string;
-  adjustment: string;
-}
 
 export interface AlmanacData {
   date: string;
@@ -85,45 +25,6 @@ export interface AlmanacData {
     money: string;
   };
   solarTerm?: string;
-}
-
-export interface AnalyzeResult {
-  subtext: string;
-  emotion: string;
-  intent: string;
-  risk: string;
-  thoughts: string;
-  particles: string[];
-  analysisConfidence: Confidence;
-  readings: ReadingHypothesis[];
-  missingInfo: string;
-  myIntent?: MyIntentInsight;
-  nextLine: NextLinePrediction;
-  affection?: AffectionInsight;
-  trust?: AffectionInsight;
-  guidance?: GuidanceInsight;
-  subject?: SubjectInsight;
-  /** received = 对方发来的消息；narration = 用户自己在讲一整件事 */
-  framing?: "received" | "narration";
-  replies: ReplyOption[];
-}
-
-export interface ApiErrorBody {
-  error: string;
-}
-
-export interface OpenerOption {
-  style: "gentle" | "humor" | "straight";
-  label: string;
-  content: string;
-  whyItWorks: string;
-}
-
-export interface OpenerResult {
-  read: string;
-  options: OpenerOption[];
-  avoid: string;
-  timing?: string;
 }
 
 export interface BirthInfo {
@@ -190,10 +91,16 @@ export interface SummaryResult {
   core: string;
   /** 2-4 条关键信息 */
   points: string[];
-  /** 对方真正想说的 */
+  /** 真正的问题 */
   meaning: string;
-  /** 你接下来该做什么 */
+  /** TA 现在的态度 / 温度，一句话 */
+  temperature?: string;
+  /** 你接下来该做什么（一句话总结） */
   advice: string;
+  /** 2-3 条具体做法，不是台词 */
+  moves?: string[];
+  /** 先别做什么 */
+  avoid?: string;
   /** 还缺什么信息 / 哪里不确定 */
   missing?: string;
 }

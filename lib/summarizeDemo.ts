@@ -40,6 +40,9 @@ export function buildSummaryDemo(req: SummaryRequest): SummaryResult {
       ? "在说你自己"
       : "在说 TA 自己";
 
+  const cooling = /冷|距离|疏远/.test(text);
+  const pressured = /压力|压到|有负担/.test(text);
+
   return {
     subject,
     core,
@@ -48,8 +51,16 @@ export function buildSummaryDemo(req: SummaryRequest): SummaryResult {
       hints.length > 0
         ? `${hints.slice(0, 2).join("；")}。这是这段里真正卡住的地方。`
         : "TA 在讲自己的感受，没有明确的诉求，更像是想被听见。",
-    advice:
-      "先回一句接住情绪的话，别急着解释自己；等 TA 情绪落下来，再问一句具体的。",
+    temperature: cooling
+      ? "像是在往后退，但不是翻脸——更像是接不住现在的强度。"
+      : "情绪还在，但没到摊牌的程度。",
+    advice: pressured
+      ? "先把强度降下来：少解释、别追问，用一件具体的小事重新出现。"
+      : "先接住情绪，别急着讲道理；等对方缓下来再谈具体的事。",
+    moves: pressured
+      ? ["隔两天发一条不需要回应的小事", "只发一条，不补第二条", "把「你怎么了」换成「我在」"]
+      : ["先回一句接住情绪的短句", "把想说的压成三句以内", "留一个不用马上回答的问题"],
+    avoid: "现在去核对「你是不是生我气了」，等于再要一次情绪回应。",
     missing: "还不确定 TA 是嫌烦、在忙，还是被别的事影响——需要看 TA 接下来会不会主动。",
   };
 }

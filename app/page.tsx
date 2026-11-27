@@ -6,12 +6,8 @@ import { BrandMark, SparkIcon } from "@/components/Icons";
 import { ContactManager } from "@/components/ContactManager";
 import { MessageInput } from "@/components/MessageInput";
 import { AskPanel } from "@/components/AskPanel";
-import { ReadingDetails } from "@/components/ReadingDetails";
-import { GuidanceCard } from "@/components/GuidanceCard";
 import { SummaryCard } from "@/components/SummaryCard";
-import { ResultCard } from "@/components/ResultCard";
 import { SceneSelector } from "@/components/SceneSelector";
-import { ThoughtBubble } from "@/components/ThoughtBubble";
 import type { ContactDraft } from "@/lib/contacts";
 import {
   appendMemory,
@@ -21,19 +17,11 @@ import {
 } from "@/lib/memory";
 import { useContacts } from "@/lib/useContacts";
 import type {
-  AnalyzeResult,
-  ApiErrorBody,
   ExampleMessage,
   Gender,
   Scene,
   SummaryResult,
 } from "@/lib/types";
-
-function isApiError(
-  payload: AnalyzeResult | ApiErrorBody,
-): payload is ApiErrorBody {
-  return "error" in payload;
-}
 
 export default function Home() {
   const [mode, setMode] = useState<"reply" | "ask">("reply");
@@ -42,19 +30,13 @@ export default function Home() {
   const [myWords, setMyWords] = useState("");
   const [context, setContext] = useState("");
   const [gender, setGender] = useState<Gender>("unknown");
-  const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([]);
   const [summary, setSummary] = useState<SummaryResult | null>(null);
   const [summarizing, setSummarizing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modelSource, setModelSource] = useState<
-    "configured" | "public" | "local" | null
-  >(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const appliedContactIdRef = useRef<string | null>(null);
-  const bondScore = result?.affection?.score ?? result?.trust?.score ?? 0;
-  const tintOpacity = 0.02 + (bondScore / 100) * 0.28;
+  const tintOpacity = 0.04;
   const {
     contacts,
     activeId,
@@ -70,7 +52,6 @@ export default function Home() {
     setMode(nextMode);
     setMessage("");
     setMyWords("");
-    setResult(null);
     setError(null);
   }
 
@@ -92,7 +73,6 @@ export default function Home() {
     setScene(activeContact.scene);
     setGender(activeContact.gender);
     setContext(activeContact.notes);
-    setResult(null);
     setError(null);
   }, [activeContact, hydrated]);
 
@@ -126,14 +106,12 @@ export default function Home() {
   function handleSceneChange(nextScene: Scene) {
     setScene(nextScene);
     setError(null);
-    setResult(null);
     syncActiveContact({ scene: nextScene });
   }
 
   function handleMessageChange(value: string) {
     setMessage(value);
     setError(null);
-    setResult(null);
     setSummary(null);
   }
 
@@ -159,6 +137,7 @@ export default function Home() {
       }
 
       setSummary(payload);
+      remember("reply", `${payload.core}｜${payload.meaning}`);
       window.setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 120);
@@ -174,7 +153,6 @@ export default function Home() {
   function handleMyWordsChange(value: string) {
     setMyWords(value);
     setError(null);
-    setResult(null);
   }
 
   function handleContextChange(value: string) {
@@ -192,7 +170,6 @@ export default function Home() {
     setScene(draft.scene);
     setGender(draft.gender);
     setContext(draft.notes);
-    setResult(null);
     setError(null);
   }
 
@@ -204,8 +181,7 @@ export default function Home() {
       setScene("flirt");
       setGender("unknown");
       setContext("");
-      setResult(null);
-        setError(null);
+          setError(null);
       return;
     }
 
@@ -235,7 +211,6 @@ export default function Home() {
     setScene("flirt");
     setGender("unknown");
     setContext("");
-    setResult(null);
   }
 
   function handlePickExample(example: ExampleMessage) {
@@ -243,7 +218,6 @@ export default function Home() {
     setMessage(example.message);
     setMyWords("");
     setContext(example.context ?? "");
-    setResult(null);
     setError(null);
 
     window.setTimeout(() => {
@@ -251,83 +225,6 @@ export default function Home() {
         .getElementById("composer")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 50);
-  }
-
-  async function handleAnalyze() {
-    if (!message.trim()) {
-      setError("先把那条让你卡住的消息贴进来。");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    setModelSource(null);
-
-    try {
-      const response = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            scene,
-            myWords: myWords.trim() || undefined,
-            context:
-              [
-                context.trim(),
-                summary
-                  ? `【已提取核心】${summary.core}；真正的问题：${summary.meaning}${summary.missing ? `；还不确定：${summary.missing}` : ""}`
-                  : "",
-              ]
-                .filter(Boolean)
-                .join("\n") || undefined,
-            memory: memoryEntries.length
-              ? formatMemory(memoryEntries)
-              : undefined,
-            gender,
-            contactName: activeContact?.name.trim() || undefined,
-          }),
-        });
-
-        const payload = (await response.json()) as
-          | AnalyzeResult
-          | ApiErrorBody;
-
-        if (!response.ok || isApiError(payload)) {
-          throw new Error(
-            isApiError(payload)
-              ? payload.error
-              : "这次没有读出结果，请再试一次。",
-          );
-        }
-
-        setResult(payload);
-        remember(
-          "reply",
-          `对方说：${message.slice(0, 42)}；读回：${payload.subtext.slice(0, 42)}`,
-        );
-        const source = response.headers.get("X-Judou-Source");
-        setModelSource(
-          source === "configured" || source === "public" || source === "local"
-            ? source
-            : null,
-        );
-
-      window.setTimeout(() => {
-        resultRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 80);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "服务开小差了，请稍后再试。",
-      );
-    } finally {
-      setLoading(false);
-    }
   }
 
   return (
@@ -461,8 +358,6 @@ export default function Home() {
             myWords={myWords}
             context={context}
             gender={gender}
-            loading={loading}
-            error={error}
             onMessageChange={handleMessageChange}
             onSummarize={handleSummarize}
             summarizing={summarizing}
@@ -470,7 +365,6 @@ export default function Home() {
             onMyWordsChange={handleMyWordsChange}
             onContextChange={handleContextChange}
             onGenderChange={handleGenderChange}
-            onAnalyze={handleAnalyze}
             onPickExample={handlePickExample}
           />
           </>
@@ -478,7 +372,7 @@ export default function Home() {
         </section>
 
         <div className="lg:col-start-1 lg:row-start-2">
-        {loading ? (
+        {summarizing ? (
           <div
             role="status"
             className="animate-fade-up mx-auto mt-7 flex max-w-md items-center gap-4 rounded-2xl border border-ink-950/10 bg-white px-5 py-4 shadow-soft"
@@ -488,11 +382,9 @@ export default function Home() {
               <BrandMark className="relative h-5 w-5 animate-soft-pulse text-ember-600" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-ink-800">
-                正在拆这句话
-              </p>
+              <p className="text-sm font-semibold text-ink-800">正在拆这段</p>
               <p className="mt-0.5 text-[11px] text-ink-400">
-                先看内心 OS，再猜下一句
+                先压掉废话，再给你方向
               </p>
             </div>
           </div>
@@ -503,24 +395,6 @@ export default function Home() {
           className="scroll-mt-5 space-y-9 pt-9 empty:hidden sm:space-y-11 lg:pt-0"
         >
           {summary ? <SummaryCard result={summary} /> : null}
-          {result ? (
-            <>
-              <ThoughtBubble result={result} />
-              <GuidanceCard result={result} />
-              <ResultCard
-                result={result}
-                scene={scene}
-                source={modelSource}
-                contactName={
-                  activeContact
-                    ? activeContact.name.trim() || "对象"
-                    : undefined
-                }
-                hasMyWords={Boolean(myWords.trim())}
-              />
-              <ReadingDetails result={result} />
-            </>
-          ) : null}
         </div>
 
         </div>

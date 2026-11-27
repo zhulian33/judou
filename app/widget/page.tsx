@@ -2,14 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { CheckIcon, CopyIcon } from "@/components/Icons";
 import { RegisterDialog } from "@/components/RegisterDialog";
 import { SummaryCard } from "@/components/SummaryCard";
 import { useAccount } from "@/lib/useAccount";
 import { PLACES } from "@/lib/places";
 import type {
   AlmanacData,
-  AnalyzeResult,
   AskResult,
   Scene,
   SummaryResult,
@@ -45,9 +43,6 @@ export default function WidgetPage() {
   const [dayOffset, setDayOffset] = useState(0);
   const [message, setMessage] = useState("");
   const [scene, setScene] = useState<Scene>("friend");
-  const [result, setResult] = useState<AnalyzeResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SummaryResult | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -144,10 +139,9 @@ export default function WidgetPage() {
 
     const frame = window.requestAnimationFrame(sendHeight);
     return () => window.cancelAnimationFrame(frame);
-  }, [almanac, mode, registerOpen, result, askResult]);
+  }, [almanac, mode, registerOpen, summary, askResult]);
 
-  const bondScore = result?.affection?.score ?? result?.trust?.score ?? 0;
-  const tint = 0.015 + (bondScore / 100) * 0.22;
+  const tint = 0.04;
   async function summarize() {
     if (message.trim().length < 20) {
       setSummaryError("先把那段话贴进来，20 字以上才好拆。");
@@ -176,52 +170,6 @@ export default function WidgetPage() {
       );
     } finally {
       setSummarizing(false);
-    }
-  }
-
-  async function analyze() {
-    if (!message.trim()) {
-      setError("先把对方的话贴进来。");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          scene,
-          ...(summary
-            ? {
-                context: `【已提取核心】${summary.core}；真正的问题：${summary.meaning}${summary.missing ? `；还不确定：${summary.missing}` : ""}`,
-              }
-            : {}),
-        }),
-      });
-      const payload = (await response.json()) as
-        | AnalyzeResult
-        | { error: string };
-
-      if (!response.ok || "error" in payload) {
-        throw new Error("error" in payload ? payload.error : "没有读出结果。");
-      }
-
-      setResult(payload);
-      window.localStorage.setItem(
-        "judou.widget.lastResult",
-        JSON.stringify(payload),
-      );
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error ? requestError.message : "请稍后再试。",
-      );
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -293,12 +241,6 @@ export default function WidgetPage() {
     } finally {
       setAskLoading(false);
     }
-  }
-
-  async function copyReply(content: string, key: string) {
-    await navigator.clipboard.writeText(content);
-    setCopied(key);
-    window.setTimeout(() => setCopied(null), 1500);
   }
 
   function headerActions() {
@@ -397,7 +339,7 @@ export default function WidgetPage() {
                 ← 回到黄历
               </button>
               <p className="text-[9px] tracking-[0.12em] text-ink-400">
-                回一句
+                提炼
               </p>
             </div>
 
@@ -440,30 +382,17 @@ export default function WidgetPage() {
               type="button"
               onClick={summarize}
               disabled={summarizing || message.trim().length < 20}
-              className="mt-3 w-full rounded-xl border border-black/12 bg-white px-4 py-2.5 text-[11px] font-medium text-ink-600 disabled:opacity-45"
+              className="mt-3 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-50"
             >
               {summarizing
                 ? "正在拆这段…"
                 : summary
-                  ? "重新提取核心"
-                  : "先提取核心"}
-            </button>
-
-            <button
-              type="button"
-              onClick={analyze}
-              disabled={loading}
-              className="mt-1.5 w-full rounded-xl bg-black px-4 py-2.5 text-[12px] font-semibold text-white disabled:opacity-60"
-            >
-              {loading ? "正在看…" : "看看怎么回"}
+                  ? "重新提炼"
+                  : "提炼这段"}
             </button>
 
             {summaryError ? (
               <p className="mt-2 text-[10px] text-ink-500">{summaryError}</p>
-            ) : null}
-
-            {error ? (
-              <p className="mt-2 text-[10px] text-ink-500">{error}</p>
             ) : null}
 
             {summary ? (
@@ -472,67 +401,6 @@ export default function WidgetPage() {
               </div>
             ) : null}
 
-            {result ? (
-              <div className="mt-4 space-y-2">
-                <div className="rounded-xl border border-black/10 bg-cream-50 px-3 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-semibold text-ink-400">
-                      {result.framing === "narration" ? "TA 大概在想" : "对方内心 OS"}
-                    </p>
-                    {result.subject ? (
-                      <span className="rounded-full bg-ink-950 px-2 py-0.5 text-[8px] text-white">
-                        {result.subject.label}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-[11px] leading-5 text-ink-700">
-                    “{result.thoughts}”
-                  </p>
-                  <p className="mt-2 text-[9px] font-semibold text-ink-400">
-                    {result.framing === "narration" ? "接下来可能会" : "下一句可能会说"}
-                  </p>
-                  <p className="mt-1 text-[11px] leading-5 text-ink-700">
-                    {result.nextLine.content}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-black/10 bg-white p-3">
-                  <p className="text-[9px] font-semibold text-ink-400">
-                    指导方向
-                  </p>
-                  <p className="mt-1 text-[11px] leading-5 text-ink-800">
-                    {result.guidance?.read ?? result.intent}
-                  </p>
-                  <p className="mt-1.5 text-[11px] leading-5 text-ink-600">
-                    {result.guidance?.direction ??
-                      `先看清 TA 现在要的是什么，再决定要不要往下推。`}
-                  </p>
-                  <div className="mt-2 rounded-lg bg-cream-50 px-2.5 py-2">
-                    <p className="text-[9px] font-semibold text-ink-400">
-                      守住这几条
-                    </p>
-                    <ul className="mt-1 space-y-0.5">
-                      {(
-                        result.guidance?.keep ?? [
-                          "先接住情绪，再谈事实",
-                          "一次只推进一件事",
-                        ]
-                      ).map((item) => (
-                        <li
-                          key={item}
-                          className="flex gap-1.5 text-[10px] leading-4 text-ink-700"
-                        >
-                          <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-ink-950/40" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <p className="mt-2 text-[10px] leading-4 text-ink-500">
-                    先别做：{result.guidance?.avoid ?? result.risk}
-                  </p>
-                </div>
-              </div>
-            ) : null}
             </div>
           </div>
         ) : mode === "ask" ? (
@@ -1025,7 +893,7 @@ export default function WidgetPage() {
                   onClick={() => setMode("reply")}
                   className="w-full rounded-xl border border-black/15 bg-white px-3 py-3 text-[12px] font-semibold text-ink-950"
                 >
-                  回一句
+                  提炼
                 </button>
               </div>
             </div>

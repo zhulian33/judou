@@ -15,13 +15,10 @@ interface MessageInputProps {
   myWords: string;
   context: string;
   gender: Gender;
-  loading: boolean;
-  error: string | null;
   onMessageChange: (value: string) => void;
   onMyWordsChange: (value: string) => void;
   onContextChange: (value: string) => void;
   onGenderChange: (value: Gender) => void;
-  onAnalyze: () => void;
   onSummarize: () => void;
   summarizing: boolean;
   summaryReady: boolean;
@@ -33,13 +30,10 @@ export function MessageInput({
   myWords,
   context,
   gender,
-  loading,
-  error,
   onMessageChange,
   onMyWordsChange,
   onContextChange,
   onGenderChange,
-  onAnalyze,
   onSummarize,
   summarizing,
   summaryReady,
@@ -64,7 +58,7 @@ export function MessageInput({
       className="mt-6"
       onSubmit={(event) => {
         event.preventDefault();
-        onAnalyze();
+        onSummarize();
       }}
     >
       <div className="flex items-end justify-between gap-3">
@@ -82,12 +76,7 @@ export function MessageInput({
       </div>
 
       <div
-        className={[
-          "relative mt-3.5 rounded-2xl border bg-white transition-all duration-200 focus-within:shadow-soft",
-          error
-            ? "border-gold-500/60 ring-4 ring-gold-500/10"
-            : "border-ink-950/10 focus-within:border-ember-300",
-        ].join(" ")}
+        className="relative mt-3.5 rounded-2xl border border-ink-950/10 bg-white transition-all duration-200 focus-within:border-ember-300 focus-within:shadow-soft"
       >
         <textarea
           value={message}
@@ -237,41 +226,19 @@ export function MessageInput({
         </div>
       </div>
 
-      {error ? (
-        <p
-          role="alert"
-          className="mt-3 rounded-xl border border-gold-500/25 bg-gold-300/10 px-3.5 py-2.5 text-xs leading-5 text-gold-700"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={onSummarize}
-        disabled={summarizing || message.trim().length < 20}
-        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-950/12 bg-white px-4 py-3 text-[13px] font-medium text-ink-600 transition-colors hover:border-ink-950/30 hover:text-ink-950 disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        {summarizing
-          ? "正在拆这段…"
-          : summaryReady
-            ? "重新提取核心"
-            : "先提取核心意思"}
-      </button>
-
       <button
         type="submit"
-        disabled={loading}
-        className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-950 px-5 py-4 text-[15px] font-semibold text-cream-50 shadow-[0_12px_30px_-20px_rgba(27,33,28,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ember-700 disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0"
+        disabled={summarizing || message.trim().length < 20}
+        className="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-950 px-5 py-4 text-[15px] font-semibold text-cream-50 shadow-[0_12px_30px_-20px_rgba(27,33,28,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ember-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
       >
-        {loading ? (
+        {summarizing ? (
           <>
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream-100/30 border-t-cream-50" />
-            正在读潜台词…
+            正在拆这段…
           </>
         ) : (
           <>
-            看看怎么回
+            {summaryReady ? "重新提炼" : "提炼这段"}
             <ArrowUpRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </>
         )}

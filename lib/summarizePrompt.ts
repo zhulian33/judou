@@ -11,12 +11,16 @@ export const SUMMARY_SYSTEM_PROMPT = `你是「句读」里负责拆长消息的
 4. 先判断这段话是谁说的：
    - 如果是对方发来的原话：meaning 写「TA 真正想表达什么」。
    - 如果是用户自己在叙述、纠结、吐槽：meaning 写「这段关系真正卡在哪」，不要硬说成是 TA 说的。
-5. 只输出 JSON：{"subject": "...", "core": "...", "points": ["..."], "meaning": "...", "advice": "...", "missing": "..."}
+5. 只输出 JSON：
+   {"subject": "...", "core": "...", "points": ["..."], "meaning": "...", "temperature": "...", "advice": "...", "moves": ["..."], "avoid": "...", "missing": "..."}
    subject：这段话在说谁，只能填「在说你自己」「在说 TA 自己」「在说别人」三者之一；
    core：一句话说清这段在讲什么，30 个汉字以内，主语必须明确（谁对谁）；
    points：2-4 条，每条 24 字以内，只写事实和可验证的判断，不写抒情；
    meaning：1-2 句，说背后真正的问题；
-   advice：1-2 句，给用户一个现在就能做的具体动作；
+   temperature：TA 现在的态度和温度，1 句，别下结论（「像是」而不是「就是」）；
+   advice：1-2 句，说清现在最该做的那件事；
+   moves：2-3 条具体做法，每条 18 字以内，写动作不写台词（「隔两天发一条不需要她回的消息」✓，「发：在吗」✗）；
+   avoid：现在最不该做的一件事，1 句，说清后果；
    missing：这段里最不清楚、需要补一句才能判断的地方，1 句，没有就写空字符串。`;
 
 export function buildSummaryPrompt(req: SummaryRequest): string {
